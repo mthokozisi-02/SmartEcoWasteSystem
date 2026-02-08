@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartEcoWaste.Api", "SmartEcoWaste.Api\SmartEcoWaste.Api.csproj", "{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartEcoWaste.Data", "SmartEcoWaste.Data\SmartEcoWaste.Data.csproj", "{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartEcoWaste.Services", "SmartEcoWaste.Services\SmartEcoWaste.Services.csproj", "{AF5E2071-F0BE-46D6-B403-725C194956ED}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Debug|x64.Build.0 = Debug|Any CPU
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Debug|x86.Build.0 = Debug|Any CPU
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Release|x64.ActiveCfg = Release|Any CPU
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Release|x64.Build.0 = Release|Any CPU
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Release|x86.ActiveCfg = Release|Any CPU
+		{50EE6410-74BC-40C4-BD6B-E1010BF9AB38}.Release|x86.Build.0 = Release|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Debug|x64.Build.0 = Debug|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Debug|x86.Build.0 = Debug|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Release|x64.ActiveCfg = Release|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Release|x64.Build.0 = Release|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Release|x86.ActiveCfg = Release|Any CPU
+		{14E8046E-5695-4FF7-A6AF-9B2AAC5BD4CA}.Release|x86.Build.0 = Release|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Debug|x64.Build.0 = Debug|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Debug|x86.Build.0 = Debug|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Release|x64.ActiveCfg = Release|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Release|x64.Build.0 = Release|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Release|x86.ActiveCfg = Release|Any CPU
+		{AF5E2071-F0BE-46D6-B403-725C194956ED}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
