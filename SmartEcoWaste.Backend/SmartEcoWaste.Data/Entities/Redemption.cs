@@ -4,11 +4,11 @@ using System.Text;
 
 namespace SmartEcoWaste.Data.Entities
 {
-    public class UserPoints : BaseEntity
+    public class Redemption : BaseEntity
     {
         public int UserId { get; set; }
-        public int Points { get; set; }
+        public int ShopId { get; set; }
+        public int PointsUsed { get; set; }
 
-        public User? User { get; set; }
     }
 }

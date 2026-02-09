@@ -12,5 +12,6 @@ namespace SmartEcoWaste.Data.Entities
         public DateTime? VerifiedAt { get; set; }
 
         public Bin? Bin { get; set; }
+        public User? User { get; set; }
     }
 }
