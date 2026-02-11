@@ -25,17 +25,32 @@ namespace SmartEcoWaste.Api.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("bins")]
-        public IActionResult CreateBin()
-        {
-            return Ok();
-        }
-
-        [Authorize(Roles = "Admin")]
         [HttpGet("get-all-users")]
         public async Task<IActionResult> GetAllUsers()
         {
             return Ok(await _userService.GetAllAsync());
+        }
+
+        [HttpPost("refresh-tokens")]
+        public async Task<IActionResult> RefreshToken(RefreshTokenRequestDto refreshTokenRequest)
+        {
+            var result = await userService.RefreshTokensAsync(refreshTokenRequest);
+            if ((bool)!result.IsSuccess!)
+            {
+                return Unauthorized(result.Message);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("assign-role")]
+        public async Task<IActionResult> AssignRole(AssignUserRolesDto assignUserRolesDto)
+        {
+            var result = await userService.AssignRolesAsync(assignUserRolesDto);
+            if ((bool)!result.IsSuccess!)
+            {
+                return BadRequest(result.Message);
+            }
+            return Ok(result);
         }
     }
 }

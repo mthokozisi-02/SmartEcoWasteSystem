@@ -18,6 +18,12 @@ namespace SmartEcoWaste.Api.Mapping
 
             CreateMap<User, LoginDto>();
             CreateMap<LoginDto, User>();
+
+            CreateMap<Bin, CreateBinDto>();
+            CreateMap<CreateBinDto, Bin>();
+
+            CreateMap<Report, ReportBinDto>();
+            CreateMap<ReportBinDto, Report>();
         }
     }
 }

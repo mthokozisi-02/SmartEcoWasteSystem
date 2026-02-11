@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SmartEcoWaste.Data.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -8,8 +9,9 @@ namespace SmartEcoWaste.Data.Entities
     {
         public int BinId { get; set; }
         public int UserId { get; set; }
-        public string? Status { get; set; }
+        public Status Status { get; set; } = Status.Full;
         public DateTime? VerifiedAt { get; set; }
+        public int? VerifiedBy { get; set; }
 
         public Bin? Bin { get; set; }
         public User? User { get; set; }

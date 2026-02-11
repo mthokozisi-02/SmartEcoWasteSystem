@@ -13,6 +13,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IBinService, BinService>();
+builder.Services.AddScoped<IReportBin,  ReportBinService>();
+builder.Services.AddScoped<IVerifyBinService, VerifyBinService>();
 
 builder.Services.AddAutoMapper(cfg =>
 {

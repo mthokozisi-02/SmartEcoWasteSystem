@@ -156,7 +156,6 @@ namespace SmartEcoWaste.Services.Services
         public async Task<ServiceResponse<string>> AssignRolesAsync(AssignUserRolesDto userRole)
         {
             var user = await _smartEcoWasteDb.Users
-                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Id == userRole.UserId);
 
             if (user == null)
@@ -165,8 +164,6 @@ namespace SmartEcoWaste.Services.Services
             }
 
             user.RoleId = userRole.RoleId;
-
-            _smartEcoWasteDb.Users.Update(user);
 
             await _smartEcoWasteDb.SaveChangesAsync();
 
