@@ -36,7 +36,7 @@
             <th pSortableColumn="name" style="min-width: 8rem">Email</th>
             <th pSortableColumn="price" style="min-width: 6rem">Role</th>
             <th pSortableColumn="category" style="min-width: 6rem">Created At</th>
-            <th style="min-width: 12rem"></th>
+            <th style="min-width: 3rem"></th>
         </tr>
     </ng-template>
     <ng-template #body let-user>
@@ -47,12 +47,13 @@
             <td style="min-width: 6rem">{{ user.roleName }}</td>
             <td style="min-width: 6rem">{{ user.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
             <td>
-                <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="ngOnInit()" />
-                <p-button icon="pi pi-trash" severity="danger" class="mr-2" [rounded]="true" [outlined]="true" (click)="ngOnInit()" />
+                <p-button icon="pi pi-trash" severity="danger" class="mr-2" [rounded]="true" [outlined]="true" (click)="deleteUser(user.id)" />
             </td>
         </tr>
     </ng-template>
 </p-table>
+
+<p-confirmdialog [style]="{ width: '450px' }" />
 
 <p-dialog [(visible)]="createUserDialog" [style]="{ width: '450px' }" header="User Details" [modal]="true">
     <ng-template #content>

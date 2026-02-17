@@ -151,6 +151,7 @@ namespace SmartEcoWaste.Services.Services
         {
             var users = await _smartEcoWasteDb.Users
                 .Include(u => u.Role)
+                .Where(u => u.IsDeleted == false)
                 .ToListAsync();
 
             var results = _mapper.Map<List<UserResponseDto>>(users);

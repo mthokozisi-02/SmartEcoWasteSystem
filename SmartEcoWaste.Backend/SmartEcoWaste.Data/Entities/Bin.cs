@@ -10,6 +10,7 @@ namespace SmartEcoWaste.Data.Entities
         public string? Area { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
+        public string QrCodeUrl { get; set; } = string.Empty;
         public Status Status { get; set; } = Status.Emptied;
     }
 }

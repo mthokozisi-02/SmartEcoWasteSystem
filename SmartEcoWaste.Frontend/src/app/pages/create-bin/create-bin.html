@@ -1,3 +1,7 @@
+<div *ngIf="isLoading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center; z-index: 9999">
+    <p-progressSpinner></p-progressSpinner>
+</div>
+<p-toast></p-toast>
 <div class="card flex flex-col gap-4">
     <div class="font-semibold text-xl">New Bin</div>
     <div class="flex flex-wrap items-start gap-6">
@@ -13,9 +17,22 @@
             <label for="longitude1" class="sr-only">Longitude</label>
             <input pInputText id="Longitude" [(ngModel)]="newBin.longitude" type="text" placeholder="Longitude" />
         </div>
-        <p-button label="Submit" [fluid]="false" [disabled]="!newBin.area || !newBin.latitude || !newBin.longitude"></p-button>
+        <p-button label="Submit" [fluid]="false" [disabled]="!newBin.area || !newBin.latitude || !newBin.longitude" (click)="saveBin()"></p-button>
     </div>
     <div class="flex flex-wrap items-start gap-6 mt-4">
         <div id="map" class="w-full rounded-lg shadow" style="height: 500px"></div>
     </div>
 </div>
+
+<p-dialog [(visible)]="qrCodeDialog" [style]="{ width: '450px' }" header="New Bin QR Code" [modal]="true">
+    <ng-template #content>
+        <div class="card">
+            <p-image class="flex items-center" [src]="'data:image/png;base64,' + file" alt="Image" width="250" />
+        </div>
+    </ng-template>
+    <ng-template #footer>
+        <p-button label="Download" icon="pi pi-check" (click)="downloadQrCode()" />
+    </ng-template>
+</p-dialog>
+
+<p-confirmdialog [style]="{ width: '450px' }" />

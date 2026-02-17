@@ -11,7 +11,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { User } from 'src/assets/interfaces/user';
 import { CommonModule, DatePipe } from '@angular/common';
 import { CreateUserDto } from 'src/assets/interfaces/create-user-dto';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { UserService } from '@/core/services/user.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DialogModule } from 'primeng/dialog';
@@ -51,7 +51,7 @@ import { ToastModule } from 'primeng/toast';
     ],
     templateUrl: './create-user.html',
     styleUrl: './create-user.scss',
-    providers: [MessageService]
+    providers: [MessageService, ConfirmationService, UserService]
 })
 export class CreateUser {
     users = signal<User[]>([]);
@@ -87,7 +87,8 @@ export class CreateUser {
 
     constructor(
         private messageService: MessageService,
-        private userService: UserService
+        private userService: UserService,
+        private confirmationService: ConfirmationService
     ) {}
 
     ngOnInit() {
@@ -132,6 +133,34 @@ export class CreateUser {
                 takeUntilDestroyed(this.destroyRef)
             )
             .subscribe();
+    }
+
+    deleteUser(id: number) {
+        console.log(id);
+        this.confirmationService.confirm({
+            message: `Are you sure you want to delete this user?`,
+            header: 'Confirm',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.isLoading = true;
+
+                this.userService
+                    .deleteUser(id)
+                    .pipe(
+                        tap(() => {
+                            this.showSuccess('User deleted successfully');
+                            this.loadUsers();
+                        }),
+                        catchError((err) => {
+                            this.showError(err);
+                            return [];
+                        }),
+                        finalize(() => (this.isLoading = false)),
+                        takeUntilDestroyed(this.destroyRef)
+                    )
+                    .subscribe();
+            }
+        });
     }
 
     hideDialog() {

@@ -22,6 +22,13 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddMaps(AppDomain.CurrentDomain.GetAssemblies());
 });
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
+
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 

@@ -22,6 +22,9 @@ namespace SmartEcoWaste.Api.Mapping
             CreateMap<Bin, CreateBinDto>();
             CreateMap<CreateBinDto, Bin>();
 
+            CreateMap<Bin, BinResponseDto>();
+            CreateMap<BinResponseDto, Bin>();
+
             CreateMap<Report, ReportBinDto>();
             CreateMap<ReportBinDto, Report>();
 

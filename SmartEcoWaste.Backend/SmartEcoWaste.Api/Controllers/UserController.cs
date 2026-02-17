@@ -34,6 +34,20 @@ namespace SmartEcoWaste.Api.Controllers
             return Ok(await _userService.GetAllAsync());
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("delete-user/{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            return Ok(await _userService.DeleteUserAsync(id));
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("update-user")]
+        public async Task<IActionResult> UpdateUser([FromBody] UserDto user)
+        {
+            return Ok(await _userService.UpdateUserAsync(user));
+        }
+
         [HttpPost("refresh-tokens")]
         public async Task<IActionResult> RefreshToken(RefreshTokenRequestDto refreshTokenRequest)
         {
