@@ -40,5 +40,11 @@ namespace SmartEcoWaste.Api.Controllers
         {
             return Ok(await _binService.UpdateAsync(user));
         }
+
+        [HttpPost("report-bin")]
+        public async Task<IActionResult> ReportBin([FromBody] ReportBinDto report)
+        {
+            return Ok(await _binService.ReportBinAsync(report));
+        }
     }
 }

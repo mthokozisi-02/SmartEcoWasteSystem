@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { CreateBinDto } from 'src/assets/interfaces/create-bin-dto';
 import { CreateUserDto } from 'src/assets/interfaces/create-user-dto';
+import { ReportBinDto } from 'src/assets/interfaces/report-bin-dto';
 
 const apiUrl = 'https://localhost:7107/api';
 
@@ -32,5 +33,10 @@ export class BinService {
 
     getAll(): Observable<any> {
         return this.http.get<any>(`${apiUrl}/get-all-bins`);
+    }
+
+    reportBin(bin: ReportBinDto): Observable<any> {
+        console.log(bin);
+        return this.http.post<any>(`${apiUrl}/report-bin`, bin);
     }
 }

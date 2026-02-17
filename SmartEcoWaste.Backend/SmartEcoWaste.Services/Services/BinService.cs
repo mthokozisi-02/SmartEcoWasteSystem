@@ -89,6 +89,62 @@ namespace SmartEcoWaste.Services.Services
             );
         }
 
+        public async Task<ServiceResponse<string>> ReportBinAsync(ReportBinDto report)
+        {
+            using var transaction = await _smartEcoWasteDbContext.Database.BeginTransactionAsync();
+
+            try
+            {
+                var bin = await _smartEcoWasteDbContext.Bins.FindAsync(report.BinId);
+
+                if (bin is null)
+                    return ServiceResponse<string>.Fail("Bin not found.");
+
+                bin.Status = Data.Enums.Status.Full;
+
+                var newReport = new Report
+                {
+                    UserId = report.UserId,
+                    BinId = report.BinId,
+                    Status = Data.Enums.Status.Full
+                };
+
+                await _smartEcoWasteDbContext.Reports.AddAsync(newReport);
+
+                // Get existing user points
+                var userPoints = await _smartEcoWasteDbContext.UsersPoints
+                    .FirstOrDefaultAsync(up => up.UserId == report.UserId);
+
+                if (userPoints is null)
+                {
+                    userPoints = new UserPoints
+                    {
+                        UserId = report.UserId,
+                        Points = 100
+                    };
+
+                    await _smartEcoWasteDbContext.UsersPoints.AddAsync(userPoints);
+                }
+                else
+                {
+                    userPoints.Points += 100;
+                }
+
+                await _smartEcoWasteDbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return ServiceResponse<string>.Success(
+                    $"Bin {bin.Id} reported as full successfully.",
+                    "Points waiting to be approved."
+                );
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                return ServiceResponse<string>.Fail("Something went wrong while reporting the bin.");
+            }
+        }
+
         public async Task<byte[]> UpdateAsync(CreateBinDto updatedBin)
         {
             var bin = await _smartEcoWasteDbContext.Bins.FindAsync(updatedBin.Id);

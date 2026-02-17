@@ -13,6 +13,7 @@ namespace SmartEcoWaste.Services.Interfaces
         Task<ServiceResponse<string>> CreateBinAsync(CreateBinDto binDto);
         Task<string> DeleteBin(int id);
         Task<byte[]> UpdateAsync(CreateBinDto binDto);
+        Task<ServiceResponse<string>> ReportBinAsync(ReportBinDto report);
         Task<ServiceResponse<List<BinResponseDto>>> GetAllAync();
 
     }

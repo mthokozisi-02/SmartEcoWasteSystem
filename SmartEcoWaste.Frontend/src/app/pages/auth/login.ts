@@ -1,6 +1,6 @@
 import { Component, DestroyRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
@@ -12,12 +12,20 @@ import { AuthService } from '@/core/services/auth.service';
 
 import { catchError, finalize, tap, throwError } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MessageService } from 'primeng/api';
+import { ProgressSpinner } from 'primeng/progressspinner';
+import { ToastModule } from 'primeng/toast';
+import { CommonModule } from '@angular/common';
 
 @Component({
     selector: 'app-login',
     standalone: true,
-    imports: [ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
+    imports: [ButtonModule, ProgressSpinner, ToastModule, CommonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
     template: `
+        <div *ngIf="isLoading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center; z-index: 9999">
+            <p-progressSpinner></p-progressSpinner>
+        </div>
+        <p-toast></p-toast>
         <app-floating-configurator />
         <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden">
             <div class="flex flex-col items-center justify-center">
@@ -65,7 +73,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
                 </div>
             </div>
         </div>
-    `
+    `,
+    providers: [MessageService]
 })
 export class Login {
     loginInfo: LoginDto = {} as LoginDto;
@@ -76,27 +85,55 @@ export class Login {
 
     private destroyRef = inject(DestroyRef);
 
-    constructor(private authService: AuthService) {}
+    private showSuccess(message: string) {
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: message,
+            life: 3000
+        });
+    }
+
+    private showError(error: any) {
+        const message = error?.error?.message || error?.error || error?.message || 'Something went wrong. Please try again.';
+
+        this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: message,
+            life: 4000
+        });
+    }
+
+    constructor(
+        private authService: AuthService,
+        private messageService: MessageService,
+        private route: ActivatedRoute,
+        private router: Router
+    ) {}
 
     onLogin() {
         this.isLoading = true;
         this.errorMessage = '';
 
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/';
+
         this.authService
             .login(this.loginInfo)
             .pipe(
                 tap((res) => {
-                    console.log('Login successful:', res);
+                    console.log('Login response:', res);
+                    this.showSuccess('Login successful');
+                    this.router.navigateByUrl(returnUrl);
                 }),
-
                 catchError((err) => {
-                    console.error('Login failed:', err);
-                    this.errorMessage = 'Login failed. Please check your credentials and try again.';
-                    return throwError(() => err);
+                    this.showError(err);
+                    return [];
                 }),
-
                 finalize(() => {
                     this.isLoading = false;
+                    this.loginInfo.passwordHash = '';
+                    this.loginInfo.email = '';
                 }),
                 takeUntilDestroyed(this.destroyRef)
             )

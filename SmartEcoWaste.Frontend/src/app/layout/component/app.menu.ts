@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
+import { AuthService } from '@/core/services/auth.service';
 
 @Component({
     selector: 'app-menu',
@@ -17,6 +18,10 @@ import { AppMenuitem } from './app.menuitem';
 })
 export class AppMenu {
     model: MenuItem[] = [];
+
+    filteredMenu: MenuItem[] = [];
+
+    constructor(private authService: AuthService) {}
 
     ngOnInit() {
         this.model = [
@@ -49,7 +54,8 @@ export class AppMenu {
                             {
                                 label: 'View Bins',
                                 icon: 'pi pi-fw pi-lock',
-                                routerLink: ['/pages/view-bins']
+                                routerLink: ['/pages/view-bins'],
+                                role: 'Admin'
                             }
                         ]
                     },
@@ -205,5 +211,36 @@ export class AppMenu {
                 ]
             }
         ];
+
+        this.buildMenu();
+    }
+
+    buildMenu() {
+        const userRole = this.authService.getUserRole();
+
+        this.model = this.filterMenuByRole(this.model, userRole);
+    }
+
+    filterMenuByRole(items: any[], userRole: string | null): any[] {
+        return items
+            .map((item) => {
+                // If item has role and doesn't match → remove
+                if (item.role && item.role !== userRole) {
+                    return null;
+                }
+
+                // If item has children → filter them recursively
+                if (item.items) {
+                    item.items = this.filterMenuByRole(item.items, userRole);
+
+                    // If after filtering there are no children → remove parent
+                    if (item.items.length === 0) {
+                        return null;
+                    }
+                }
+
+                return item;
+            })
+            .filter((item) => item !== null);
     }
 }

@@ -27,9 +27,10 @@ export class SmartGuard implements CanActivate {
 
         if (expectedRole) {
             const userRole = this.authService.getUserRole();
+            console.log('Expected role for this route:', expectedRole);
 
             if (userRole !== expectedRole) {
-                this.router.navigate(['/dashboard']);
+                this.router.navigate(['/']);
                 return false;
             }
         }

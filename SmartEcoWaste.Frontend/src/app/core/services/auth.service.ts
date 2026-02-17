@@ -31,6 +31,7 @@ export class AuthService {
         return this.http.post<AuthResponse>(`${apiUrl}/user-login`, login).pipe(
             tap((response) => {
                 this.setSession(response);
+                this.getUserRole();
                 this.currentUserSubject.next(true);
             })
         );
@@ -52,6 +53,11 @@ export class AuthService {
 
         this.currentUserSubject.next(false);
         this.router.navigate(['/login']);
+    }
+
+    isLoggedIn(): boolean {
+        const token = this.getAccessToken();
+        return !!token && !this.isTokenExpired();
     }
 
     // ===============================
@@ -145,7 +151,15 @@ export class AuthService {
         if (!token) return null;
 
         const decoded: any = jwtDecode(token);
-        console.log('role:', decoded);
-        return decoded.role;
+
+        // Extract claims using full keys
+        const role = decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || null;
+        const userId = decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || null;
+
+        if (userId) {
+            localStorage.setItem('user_id', userId);
+        }
+
+        return role;
     }
 }
