@@ -9,7 +9,7 @@ namespace SmartEcoWaste.Data.Entities
         public string Name { get; set; }
         public string Email { get; set; }
         public string PasswordHash { get; set; }
-        public int RoleId { get; set; } = 1;
+        public int RoleId { get; set; } = 2;
         public bool IsEmailConfirmed { get; set; } = false;
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }

@@ -13,5 +13,11 @@ namespace SmartEcoWaste.Api.Controllers
         {
             return Ok(await _reportBin.ReportBinAsync(reportBinDto));
         }
+
+        [HttpGet("get-all-reports")]
+        public async Task<IActionResult> GetAllReports()
+        {
+            return Ok(await _reportBin.GetReportsAsync());
+        }
     }
 }

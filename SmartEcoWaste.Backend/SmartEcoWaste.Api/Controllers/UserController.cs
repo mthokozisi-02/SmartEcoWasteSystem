@@ -6,6 +6,8 @@ using SmartEcoWaste.Services.Services;
 
 namespace SmartEcoWaste.Api.Controllers
 {
+    [Route("api/")]
+    [ApiController]
     public class UserController(IUserService userService) : Controller
     {
 
@@ -13,11 +15,12 @@ namespace SmartEcoWaste.Api.Controllers
 
 
         [HttpPost("create-user")]
-        public async Task<IActionResult> CreateUSer(UserDto user)
+        public async Task<IActionResult> CreateUSer([FromBody] UserDto user)
         {
             return Ok(await _userService.CreateAsyc(user));
         }
 
+        
         [HttpPost("user-login")]
         public async Task<IActionResult> Login(LoginDto user)
         {

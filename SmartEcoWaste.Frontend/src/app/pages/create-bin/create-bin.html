@@ -1,0 +1,21 @@
+<div class="card flex flex-col gap-4">
+    <div class="font-semibold text-xl">New Bin</div>
+    <div class="flex flex-wrap items-start gap-6">
+        <div class="field">
+            <label for="Area" class="sr-only">Area</label>
+            <textarea pTextarea placeholder="Area" [(ngModel)]="newBin.area" [autoResize]="true" rows="1" cols="60"></textarea>
+        </div>
+        <div class="field">
+            <label for="Latitude" class="sr-only">Latitude</label>
+            <input pInputText id="Latitude" [(ngModel)]="newBin.latitude" type="text" placeholder="Latitude" />
+        </div>
+        <div class="field">
+            <label for="longitude1" class="sr-only">Longitude</label>
+            <input pInputText id="Longitude" [(ngModel)]="newBin.longitude" type="text" placeholder="Longitude" />
+        </div>
+        <p-button label="Submit" [fluid]="false" [disabled]="!newBin.area || !newBin.latitude || !newBin.longitude"></p-button>
+    </div>
+    <div class="flex flex-wrap items-start gap-6 mt-4">
+        <div id="map" class="w-full rounded-lg shadow" style="height: 500px"></div>
+    </div>
+</div>

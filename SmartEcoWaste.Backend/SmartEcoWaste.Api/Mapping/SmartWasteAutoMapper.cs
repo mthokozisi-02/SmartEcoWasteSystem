@@ -24,6 +24,9 @@ namespace SmartEcoWaste.Api.Mapping
 
             CreateMap<Report, ReportBinDto>();
             CreateMap<ReportBinDto, Report>();
+
+            CreateMap<User, UserResponseDto>();
+            CreateMap<UserResponseDto, User>();
         }
     }
 }

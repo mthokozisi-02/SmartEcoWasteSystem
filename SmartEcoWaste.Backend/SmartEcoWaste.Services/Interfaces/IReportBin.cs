@@ -11,5 +11,6 @@ namespace SmartEcoWaste.Services.Interfaces
     public interface IReportBin
     {
         Task<ServiceResponse<string>> ReportBinAsync(ReportBinDto reportBin);
+        Task<ServiceResponse<List<GetReportsDto>>> GetReportsAsync();
     }
 }

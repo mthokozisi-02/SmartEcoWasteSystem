@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Update;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SmartEcoWaste.Data.Dtos;
@@ -43,7 +44,9 @@ namespace SmartEcoWaste.Services.Services
 
         private async Task<User?> ValidateRefreshTokenAsync(int userId, string refreshToken)
         {
-            var user = await _smartEcoWasteDb.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await _smartEcoWasteDb.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
                 return null;
@@ -87,7 +90,8 @@ namespace SmartEcoWaste.Services.Services
             var response = new TokenResponseDto
             {
                 AccessToken = CreateToken(user),
-                RefreshToken = await GenerateAndSaveRefreshTokenAsync(user)
+                RefreshToken = await GenerateAndSaveRefreshTokenAsync(user),
+                ExpiresIn = 24 * 60 * 60 // 1 day in seconds
             };
 
             return ServiceResponse<TokenResponseDto>.Success(
@@ -143,12 +147,20 @@ namespace SmartEcoWaste.Services.Services
 
         }
 
-        public async Task<ServiceResponse<List<ResponseUserDto>>> GetAllAsync()
+        public async Task<ServiceResponse<List<UserResponseDto>>> GetAllAsync()
         {
-            var users = await _smartEcoWasteDb.Users.ToListAsync();
+            var users = await _smartEcoWasteDb.Users
+                .Include(u => u.Role)
+                .ToListAsync();
 
-            return ServiceResponse<List<ResponseUserDto>>.Success(
-                _mapper.Map<List<ResponseUserDto>>(users),
+            var results = _mapper.Map<List<UserResponseDto>>(users);
+            results.ForEach(r =>
+            {
+                r.RoleName = r.Role.Name;
+            });
+
+            return ServiceResponse<List<UserResponseDto>>.Success(
+                results,
                 "Users retrieved successfully"
             );
         }
@@ -171,6 +183,36 @@ namespace SmartEcoWaste.Services.Services
                 "Role assigned successfully",
                 "User role updated"
             );
+        }
+
+        public async Task<ServiceResponse<string>> UpdateUserAsync(UserDto userDto)
+        {
+            var user = await _smartEcoWasteDb.Users.FindAsync(userDto.Id);
+            if (user == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            user.PasswordHash = new PasswordHasher<User>()
+                .HashPassword(new User(), userDto.PasswordHash);
+
+            await _smartEcoWasteDb.SaveChangesAsync();
+            return ServiceResponse<string>.Success(
+                "",
+                "User updated successfully");
+        }
+
+        public async Task<ServiceResponse<string>> DeleteUserAsync(int userId)
+        {
+            var user = await _smartEcoWasteDb.Users.FindAsync(userId);
+            if (user == null)
+                throw new Exception("User not found.");
+
+            user.IsDeleted = true;
+            await _smartEcoWasteDb.SaveChangesAsync();
+            return ServiceResponse<string>.Success(
+                "",
+                $"{user.Name} deleted successfully");
         }
     }
 }

@@ -13,7 +13,9 @@ namespace SmartEcoWaste.Services.Interfaces
         Task<ServiceResponse<string>> CreateAsyc(UserDto userDto);
         Task<ServiceResponse<TokenResponseDto>> LoginAsync(LoginDto userDto);
         Task<ServiceResponse<TokenResponseDto>> RefreshTokensAsync(RefreshTokenRequestDto request);
-        Task<ServiceResponse<List<ResponseUserDto>>> GetAllAsync();
+        Task<ServiceResponse<List<UserResponseDto>>> GetAllAsync();
         Task<ServiceResponse<string>> AssignRolesAsync(AssignUserRolesDto userRole);
+        Task<ServiceResponse<string>> UpdateUserAsync(UserDto userDto);
+        Task<ServiceResponse<string>> DeleteUserAsync(int userId);
     }
 }

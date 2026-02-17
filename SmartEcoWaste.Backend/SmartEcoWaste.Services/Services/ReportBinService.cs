@@ -16,6 +16,7 @@ namespace SmartEcoWaste.Services.Services
     {
         private readonly IMapper _mapper = mapper;
         private readonly SmartEcoWasteDbContext _smartEcoWasteDbContext = smartEcoWasteDbContext;
+
         public async Task<ServiceResponse<string>> ReportBinAsync(ReportBinDto reportBin)
         {
             var reported = await _smartEcoWasteDbContext.Reports.FirstOrDefaultAsync(b => b.Id == reportBin.BinId && b.Status == Data.Enums.Status.Full);
@@ -38,6 +39,30 @@ namespace SmartEcoWaste.Services.Services
                     "Bin is already reported as full"
                 );
             }
+        }
+
+        public async Task<ServiceResponse<List<GetReportsDto>>> GetReportsAsync()
+        {
+            var reports = await _smartEcoWasteDbContext.Reports
+                .Include(r => r.Bin)
+                .Include(r => r.User)
+                .Select(r => new GetReportsDto
+                {
+                    BinId = r.BinId,
+                    BinArea = r.Bin!.Area!,
+                    UserId = r.UserId,
+                    UserName = r.User!.Name,
+                    Status = r.Status,
+                    VerifiedAt = r.VerifiedAt,
+                    VerifiedBy = r.VerifiedBy,
+                    CreatedAt = r.CreatedAt,
+                })
+                .ToListAsync();
+
+            return ServiceResponse<List<GetReportsDto>>.Success(
+                reports,
+                "reports retrieved successfully"
+            );
         }
     }
 }
