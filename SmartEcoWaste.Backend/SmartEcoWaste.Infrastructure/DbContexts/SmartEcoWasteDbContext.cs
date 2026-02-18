@@ -25,7 +25,12 @@ namespace SmartEcoWaste.Infrastructure.DbContexts
             base.OnModelCreating(modelBuilder);
             // Configure your entity relationships and mappings here
 
-            
+            modelBuilder.Entity<Report>()
+            .HasOne(r => r.VerifyByUser)
+            .WithMany()
+            .HasForeignKey(r => r.VerifiedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
         }
     }
 }

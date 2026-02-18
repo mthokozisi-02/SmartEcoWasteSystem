@@ -11,5 +11,6 @@ namespace SmartEcoWaste.Data.Dtos
         public int CollecterId { get; set; }
         public int BinId { get; set; }
         public int UserId { get; set; }
+        public int ReportId { get; set; }
     }
 }

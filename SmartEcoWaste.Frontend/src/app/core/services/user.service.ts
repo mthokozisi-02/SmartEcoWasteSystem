@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { CreateUserDto } from 'src/assets/interfaces/create-user-dto';
+import { UpdateRoleDto } from 'src/assets/interfaces/update-role-dto';
 
 const apiUrl = 'https://localhost:7107/api';
 
@@ -17,6 +18,11 @@ export class UserService {
         return this.http.post<any>(`${apiUrl}/create-user`, user);
     }
 
+    UpdateRole(role: UpdateRoleDto): Observable<any> {
+        console.log(role);
+        return this.http.post<any>(`${apiUrl}/assign-role`, role);
+    }
+
     updateUser(user: CreateUserDto): Observable<any> {
         console.log(user);
         return this.http.put<any>(`${apiUrl}/update-user`, user);
@@ -28,5 +34,9 @@ export class UserService {
 
     getAll(): Observable<any> {
         return this.http.get<any>(`${apiUrl}/get-all-users`);
+    }
+
+    getAllRoles(): Observable<any> {
+        return this.http.get<any>(`${apiUrl}/get-roles`);
     }
 }

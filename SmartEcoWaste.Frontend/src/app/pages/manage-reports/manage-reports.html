@@ -1,0 +1,73 @@
+<div *ngIf="isLoading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center; z-index: 9999">
+    <p-progressSpinner></p-progressSpinner>
+</div>
+<p-toast></p-toast>
+
+<div class="card">
+    <p-tabs value="0">
+        <p-tablist>
+            <p-tab value="0" (click)="allReports()" class="flex items-center !gap-2 text-inherit"><i class="pi pi-list"></i> <span>All Reports</span></p-tab>
+            <p-tab value="1" (click)="clearedReports()" class="flex items-center !gap-2 text-inherit"><i class="pi pi-check-circle"></i> <span>Cleared Reports</span></p-tab>
+            <p-tab value="2" (click)="unclearedReports()" class="flex items-center !gap-2 text-inherit"><i class="pi pi-times-circle"></i> <span>Uncleared Reports</span></p-tab>
+        </p-tablist>
+        <p-tabpanels>
+            <p class="m-0">
+                <p-table
+                    #dt
+                    [value]="filteredReports()"
+                    [rows]="10"
+                    [paginator]="true"
+                    [globalFilterFields]="['binArea']"
+                    [tableStyle]="{ 'min-width': '75rem' }"
+                    [rowHover]="true"
+                    dataKey="id"
+                    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
+                    [showCurrentPageReport]="true"
+                    [rowsPerPageOptions]="[10, 20, 30]"
+                >
+                    <ng-template #caption>
+                        <div class="flex items-center justify-between">
+                            <p-iconfield>
+                                <p-inputicon class="pi pi-search" />
+                                <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Search..." />
+                            </p-iconfield>
+                        </div>
+                    </ng-template>
+                    <ng-template #header>
+                        <tr>
+                            <th style="width: 3rem">ID</th>
+                            <th style="width: 3rem">Bin ID</th>
+                            <th style="min-width: 6rem">Bin Area</th>
+                            <th pSortableColumn="name" style="min-width: 6rem">Reporter</th>
+                            <th pSortableColumn="price" style="min-width: 6rem">Status</th>
+                            <th pSortableColumn="price" style="min-width: 12rem">Reported At</th>
+                            <th pSortableColumn="price" *ngIf="category === 'All' || category === 'Cleared'" style="min-width: 8rem">Verified By</th>
+                            <th pSortableColumn="category" *ngIf="category === 'All' || category === 'Cleared'" style="min-width: 12rem">Verified At</th>
+                            <th style="min-width: 12rem"></th>
+                        </tr>
+                    </ng-template>
+                    <ng-template #body let-report>
+                        <tr>
+                            <td style="width: 3rem">{{report.id}}</td>
+                            <td style="min-width: 6rem">{{ report.binId }}</td>
+                            <td style="min-width: 6rem">{{ trimToThirdComma(report.binArea) }}</td>
+                            <td style="min-width: 6rem">{{ report.userName }}</td>
+                            <td>
+                                <p-tag [value]="report.status" [severity]="getSeverity(report.status)" />
+                            </td>
+                            <td style="min-width: 12rem">{{ report.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                            <td *ngIf="category === 'All' || category === 'Cleared'" style="min-width: 8rem">{{ report.verifiedBy }}</td>
+                            <td *ngIf="category === 'All' || category === 'Cleared'" style="min-width: 12rem">{{ report.verifiedAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                            <td>
+                                <p-button *ngIf="report.status === 'Full'" icon="pi pi-pencil" label="Clear" severity="info" class="mr-2" [rounded]="true" [outlined]="true" (click)="clearReport(report)" />
+                                <p-button icon="pi pi-trash" severity="danger" class="mr-2" [rounded]="true" [outlined]="true" (click)="deleteReport(report.id)" />
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p>
+        </p-tabpanels>
+    </p-tabs>
+</div>
+
+<p-confirmdialog [style]="{ width: '450px' }" />

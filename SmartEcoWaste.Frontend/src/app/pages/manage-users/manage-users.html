@@ -1,0 +1,72 @@
+<div *ngIf="isLoading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center; z-index: 9999">
+    <p-progressSpinner></p-progressSpinner>
+</div>
+<p-toast></p-toast>
+
+<p-table
+    #dt
+    [value]="users()"
+    [rows]="10"
+    [paginator]="true"
+    [globalFilterFields]="['name']"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    [rowHover]="true"
+    dataKey="id"
+    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
+    [showCurrentPageReport]="true"
+    [rowsPerPageOptions]="[10, 20, 30]"
+>
+    <ng-template #caption>
+        <div class="flex items-center justify-between">
+            <p-iconfield>
+                <p-inputicon class="pi pi-search" />
+                <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Search..." />
+            </p-iconfield>
+        </div>
+    </ng-template>
+    <ng-template #header>
+        <tr>
+            <th style="width: 3rem">ID</th>
+            <th style="min-width: 6rem">Name</th>
+            <th pSortableColumn="name" style="min-width: 6rem">Email</th>
+            <th pSortableColumn="price" style="min-width: 6rem">Role</th>
+            <th pSortableColumn="price" style="min-width: 4rem">Reports</th>
+            <th pSortableColumn="price" style="min-width: 4rem">User Points</th>
+            <th pSortableColumn="category" style="min-width: 6rem">Created At</th>
+            <th style="min-width: 3rem"></th>
+        </tr>
+    </ng-template>
+    <ng-template #body let-user>
+        <tr>
+            <td style="width: 3rem">{{user.id}}</td>
+            <td style="min-width: 6rem">{{ user.name }}</td>
+            <td style="min-width: 6rem">{{ user.email }}</td>
+            <td style="min-width: 6rem">{{ user.roleName }}</td>
+            <td style="min-width: 4rem">{{ user.reports }}</td>
+            <td style="min-width: 4rem">
+                <p-badge [value]="user.userPoints" [severity]="userSeverity(user)" />
+            </td>
+
+            <td style="min-width: 6rem">{{ user.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+            <td>
+                <p-button icon="pi pi-pencil" label="Update Role" severity="info" class="mr-2" [rounded]="true" [outlined]="true" (click)="updateRole(user)" />
+                <p-button icon="pi pi-trash" severity="danger" class="mr-2" [rounded]="true" [outlined]="true" (click)="deleteUser(user.id)" />
+            </td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<p-confirmdialog [style]="{ width: '450px' }" />
+
+<p-dialog [(visible)]="updateUserDialog" [style]="{ width: '450px' }" header="User Details" [modal]="true">
+    <ng-template #content>
+        <div class="card flex justify-center">
+            <p-select [options]="roles" appendTo="body" [(ngModel)]="selectedRole" optionLabel="name" placeholder="Select a Role" class="w-full md:w-56" />
+        </div>
+    </ng-template>
+
+    <ng-template #footer>
+        <p-button label="Cancel" icon="pi pi-times" severity="danger" text (click)="hideDialog()" />
+        <p-button label="Save" icon="pi pi-check" (click)="saveRole()" />
+    </ng-template>
+</p-dialog>

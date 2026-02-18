@@ -154,11 +154,17 @@ namespace SmartEcoWaste.Services.Services
                 .Where(u => u.IsDeleted == false)
                 .ToListAsync();
 
+
             var results = _mapper.Map<List<UserResponseDto>>(users);
-            results.ForEach(r =>
-            {
-                r.RoleName = r.Role.Name;
-            });
+
+            //get userpoints
+            foreach (var user in results) {
+                user.RoleName = user.Role.Name;
+                user.Reports = await _smartEcoWasteDb.Reports.Where(r => r.IsDeleted == false && r.UserId == user.Id).CountAsync();
+                user.UserPoints = await _smartEcoWasteDb.UsersPoints
+                    .Where(up => up.UserId == user.Id)
+                    .SumAsync(up => up.Points);
+            }
 
             return ServiceResponse<List<UserResponseDto>>.Success(
                 results,
@@ -214,6 +220,18 @@ namespace SmartEcoWaste.Services.Services
             return ServiceResponse<string>.Success(
                 "",
                 $"{user.Name} deleted successfully");
+        }
+
+        public async Task<ServiceResponse<List<Role>>> GetAllRolesAsync()
+        {
+            var roles = await _smartEcoWasteDb.Roles
+                .Where(r => r.IsDeleted == false)
+                .ToListAsync();
+
+            return ServiceResponse<List<Role>>.Success(
+                roles,
+                "Roles retrieved successfully"
+            );
         }
     }
 }

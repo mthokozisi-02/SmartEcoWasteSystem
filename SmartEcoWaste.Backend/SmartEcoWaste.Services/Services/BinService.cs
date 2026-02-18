@@ -111,25 +111,6 @@ namespace SmartEcoWaste.Services.Services
 
                 await _smartEcoWasteDbContext.Reports.AddAsync(newReport);
 
-                // Get existing user points
-                var userPoints = await _smartEcoWasteDbContext.UsersPoints
-                    .FirstOrDefaultAsync(up => up.UserId == report.UserId);
-
-                if (userPoints is null)
-                {
-                    userPoints = new UserPoints
-                    {
-                        UserId = report.UserId,
-                        Points = 100
-                    };
-
-                    await _smartEcoWasteDbContext.UsersPoints.AddAsync(userPoints);
-                }
-                else
-                {
-                    userPoints.Points += 100;
-                }
-
                 await _smartEcoWasteDbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 

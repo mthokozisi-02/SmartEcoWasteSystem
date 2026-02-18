@@ -1,32 +1,34 @@
-import { Component, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { UserService } from '@/core/services/user.service';
+import { CommonModule } from '@angular/common';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
-import { Table, TableModule } from 'primeng/table';
-import { ToolbarModule } from 'primeng/toolbar';
-import { catchError, finalize, tap, throwError } from 'rxjs';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { User } from 'src/assets/interfaces/user';
-import { CommonModule, DatePipe } from '@angular/common';
-import { CreateUserDto } from 'src/assets/interfaces/create-user-dto';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { UserService } from '@/core/services/user.service';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DialogModule } from 'primeng/dialog';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { InputTextModule } from 'primeng/inputtext';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { RatingModule } from 'primeng/rating';
 import { RippleModule } from 'primeng/ripple';
 import { SelectModule } from 'primeng/select';
+import { Table, TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
+import { ToolbarModule } from 'primeng/toolbar';
+import { tap, catchError, finalize } from 'rxjs';
+import { Roles } from 'src/assets/interfaces/roles';
+import { UpdateRoleDto } from 'src/assets/interfaces/update-role-dto';
+import { User } from 'src/assets/interfaces/user';
 
 @Component({
-    selector: 'app-create-user',
+    selector: 'app-manage-users',
     standalone: true,
     imports: [
         CommonModule,
@@ -47,23 +49,28 @@ import { ToastModule } from 'primeng/toast';
         TagModule,
         InputIconModule,
         IconFieldModule,
-        ConfirmDialogModule
+        ConfirmDialogModule,
+        BadgeModule,
+        SelectModule
     ],
-    templateUrl: './create-user.html',
-    styleUrl: './create-user.scss',
-    providers: [MessageService, ConfirmationService, UserService]
+    templateUrl: './manage-users.html',
+    styleUrl: './manage-users.scss',
+    providers: [MessageService, ConfirmationService]
 })
-export class CreateUser {
+export class ManageUsers {
     users = signal<User[]>([]);
 
-    newUser: CreateUserDto = {} as CreateUserDto;
+    roles: Roles[] = [];
+    selectedRole: Roles = {} as Roles;
+
+    selectedUser: UpdateRoleDto = {} as UpdateRoleDto;
 
     submitted: boolean = false;
 
     private destroyRef = inject(DestroyRef);
 
     isLoading = false;
-    createUserDialog = false;
+    updateUserDialog = false;
 
     private showSuccess(message: string) {
         this.messageService.add({
@@ -92,21 +99,17 @@ export class CreateUser {
     ) {}
 
     ngOnInit() {
-        console.log(localStorage);
-
         this.loadUsers();
     }
 
-    saveUser() {
+    loadUsers() {
         this.isLoading = true;
 
         this.userService
-            .createUser(this.newUser)
+            .getAll()
             .pipe(
-                tap(() => {
-                    this.showSuccess('User created successfully');
-                    this.createUserDialog = false;
-                    this.loadUsers();
+                tap((res) => {
+                    (this.users.set(res.data), this.getAllRoles());
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -118,14 +121,43 @@ export class CreateUser {
             .subscribe();
     }
 
-    loadUsers() {
+    getAllRoles() {
         this.isLoading = true;
 
         this.userService
-            .getAll()
+            .getAllRoles()
             .pipe(
                 tap((res) => {
-                    (this.users.set(res.data), console.log('users:', res));
+                    ((this.roles = res.data), console.log('roles:', res));
+                }),
+                catchError((err) => {
+                    this.showError(err);
+                    return [];
+                }),
+                finalize(() => (this.isLoading = false)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
+    }
+
+    updateRole(user: User) {
+        console.log(user.role);
+        this.selectedRole = user.role;
+        this.selectedUser.userId = user.id;
+        this.updateUserDialog = true;
+    }
+
+    saveRole() {
+        this.isLoading = true;
+        this.selectedUser.roleId = this.selectedRole?.id;
+
+        this.userService
+            .UpdateRole(this.selectedUser)
+            .pipe(
+                tap(() => {
+                    this.showSuccess('User updated successfully');
+                    this.updateUserDialog = false;
+                    this.loadUsers();
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -165,15 +197,17 @@ export class CreateUser {
         });
     }
 
-    hideDialog() {
-        this.createUserDialog = false;
-    }
-
-    createUser() {
-        this.createUserDialog = true;
+    userSeverity(user: User) {
+        if (user.userPoints === 0) return 'danger';
+        else if (user.userPoints > 0 && user.userPoints < 500) return 'warn';
+        else return 'success';
     }
 
     onGlobalFilter(table: Table, event: Event) {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    }
+
+    hideDialog() {
+        this.updateUserDialog = false;
     }
 }

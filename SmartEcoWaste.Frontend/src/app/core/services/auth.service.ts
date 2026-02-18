@@ -43,16 +43,16 @@ export class AuthService {
     logout(): void {
         const refreshToken = this.getRefreshToken();
 
-        if (refreshToken) {
-            this.http.post(`${apiUrl}/logout`, { refreshToken }).subscribe();
-        }
+        // if (refreshToken) {
+        //     this.http.post(`${apiUrl}/logout`, { refreshToken }).subscribe();
+        // }
 
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('expires_at');
 
         this.currentUserSubject.next(false);
-        this.router.navigate(['/login']);
+        this.router.navigate(['/auth/login']);
     }
 
     isLoggedIn(): boolean {

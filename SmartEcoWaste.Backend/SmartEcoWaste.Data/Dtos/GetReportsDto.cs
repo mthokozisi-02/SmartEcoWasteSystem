@@ -9,6 +9,7 @@ namespace SmartEcoWaste.Data.Dtos
 {
     public class GetReportsDto
     {
+        public int Id { get; set; }
         public int BinId { get; set; }
         public string BinArea { get; set; }
         public int UserId { get; set; }
@@ -16,6 +17,6 @@ namespace SmartEcoWaste.Data.Dtos
         public Status Status { get; set; } = Status.Full;
         public DateTime? VerifiedAt { get; set; }
         public DateTime? CreatedAt { get; set; }
-        public int? VerifiedBy { get; set; }
+        public string? VerifiedBy { get; set; }
     }
 }

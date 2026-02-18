@@ -69,5 +69,16 @@ namespace SmartEcoWaste.Api.Controllers
             }
             return Ok(result);
         }
+
+        [HttpGet("get-roles")]
+        public async Task<IActionResult> GetRoles()
+        {
+            var result = await userService.GetAllRolesAsync();
+            if ((bool)!result.IsSuccess!)
+            {
+                return BadRequest(result.Message);
+            }
+            return Ok(result);
+        }
     }
 }

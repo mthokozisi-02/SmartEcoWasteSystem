@@ -17,28 +17,16 @@ namespace SmartEcoWaste.Services.Services
         private readonly IMapper _mapper = mapper;
         private readonly SmartEcoWasteDbContext _smartEcoWasteDbContext = smartEcoWasteDbContext;
 
-        public async Task<ServiceResponse<string>> ReportBinAsync(ReportBinDto reportBin)
+        public async Task<string> DeleteReport(int id)
         {
-            var reported = await _smartEcoWasteDbContext.Reports.FirstOrDefaultAsync(b => b.Id == reportBin.BinId && b.Status == Data.Enums.Status.Full);
+            var report = await _smartEcoWasteDbContext.Reports.FindAsync(id);
+            if (report == null)
+                throw new Exception("Report not found.");
 
-            if (reported == null)
-            {
-
-                var newReport = _mapper.Map<Report>(reportBin);
-                await _smartEcoWasteDbContext.Reports.AddAsync(newReport);
-                await _smartEcoWasteDbContext.SaveChangesAsync();
-
-                return ServiceResponse<string>.Success(
-                    null,
-                    "Bin reported successfully"
-                );
-            }
-            else
-            {
-                return ServiceResponse<string>.Fail(
-                    "Bin is already reported as full"
-                );
-            }
+            report.IsDeleted = true;
+            await _smartEcoWasteDbContext.SaveChangesAsync();
+            return
+                $"{report.Id} report deleted successfully";
         }
 
         public async Task<ServiceResponse<List<GetReportsDto>>> GetReportsAsync()
@@ -46,15 +34,18 @@ namespace SmartEcoWaste.Services.Services
             var reports = await _smartEcoWasteDbContext.Reports
                 .Include(r => r.Bin)
                 .Include(r => r.User)
+                .Include(r => r.VerifyByUser)
+                .Where(r => r.IsDeleted == false)
                 .Select(r => new GetReportsDto
                 {
+                    Id = r.Id,
                     BinId = r.BinId,
                     BinArea = r.Bin!.Area!,
                     UserId = r.UserId,
                     UserName = r.User!.Name,
                     Status = r.Status,
                     VerifiedAt = r.VerifiedAt,
-                    VerifiedBy = r.VerifiedBy,
+                    VerifiedBy = r.VerifyByUser.Name,
                     CreatedAt = r.CreatedAt,
                 })
                 .ToListAsync();
@@ -63,6 +54,50 @@ namespace SmartEcoWaste.Services.Services
                 reports,
                 "reports retrieved successfully"
             );
+        }
+
+        public async Task<ServiceResponse<string>> VerifyReportAsync(VerifyBinDto verify)
+        {
+            var report = await _smartEcoWasteDbContext.Reports.FirstOrDefaultAsync(r => r.BinId == verify.BinId && r.UserId == verify.UserId && r.Status == Data.Enums.Status.Full && r.Id == verify.ReportId);
+
+            if (report != null)
+            {
+                report.Status = Data.Enums.Status.Emptied;
+                report.VerifiedAt = DateTime.UtcNow;
+                report.UpdatedAt = DateTime.UtcNow;
+                report.VerifiedBy = verify.CollecterId;
+
+                var bin = await _smartEcoWasteDbContext.Bins.FindAsync(report.BinId);
+                bin.Status = Data.Enums.Status.Emptied;
+
+                // Get existing user points
+                var userPoints = await _smartEcoWasteDbContext.UsersPoints
+                    .FirstOrDefaultAsync(up => up.UserId == report.UserId);
+
+
+                if (userPoints is null)
+                {
+                    userPoints = new UserPoints
+                    {
+                        UserId = report.UserId,
+                        Points = 100
+                    };
+
+                    await _smartEcoWasteDbContext.UsersPoints.AddAsync(userPoints);
+                }
+                else
+                {
+                    userPoints.Points += 100;
+                }
+
+                await _smartEcoWasteDbContext.SaveChangesAsync();
+
+                return ServiceResponse<string>.Success("Bin verified successfully.", "Bin verification successful.");
+            }
+            else
+            {
+                return ServiceResponse<string>.Success(null, "Report does not exist");
+            }
         }
     }
 }

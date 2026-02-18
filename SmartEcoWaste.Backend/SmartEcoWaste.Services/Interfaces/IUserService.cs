@@ -1,4 +1,5 @@
 ﻿using SmartEcoWaste.Data.Dtos;
+using SmartEcoWaste.Data.Entities;
 using SmartEcoWaste.Services.Services;
 using System;
 using System.Collections.Generic;
@@ -17,5 +18,6 @@ namespace SmartEcoWaste.Services.Interfaces
         Task<ServiceResponse<string>> AssignRolesAsync(AssignUserRolesDto userRole);
         Task<ServiceResponse<string>> UpdateUserAsync(UserDto userDto);
         Task<ServiceResponse<string>> DeleteUserAsync(int userId);
+        Task<ServiceResponse<List<Role>>> GetAllRolesAsync();
     }
 }
