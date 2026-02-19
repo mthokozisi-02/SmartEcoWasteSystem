@@ -19,7 +19,8 @@
         </div>
         <p-button label="Submit" [fluid]="false" [disabled]="!newBin.area || !newBin.latitude || !newBin.longitude" (click)="saveBin()"></p-button>
     </div>
-    <div class="flex flex-wrap items-start gap-6 mt-4">
+    <p class="text-red-500">Select the location for the new bin on the map below</p>
+    <div class="flex flex-wrap items-start gap-6 mt-2">
         <div id="map" class="w-full rounded-lg shadow" style="height: 500px"></div>
     </div>
 </div>

@@ -15,5 +15,7 @@ namespace SmartEcoWaste.Data.Entities
         public DateTime? RefreshTokenExpiryTime { get; set; }
 
         public Role Role { get; set; } = null!;
+        public ICollection<Report>? UserReports { get; set; }
+        public ICollection<UserPoints>? Points { get; set; }
     }
 }

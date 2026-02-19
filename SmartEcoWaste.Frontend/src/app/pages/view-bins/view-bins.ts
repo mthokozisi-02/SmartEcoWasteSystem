@@ -155,7 +155,7 @@ export class ViewBins {
             .pipe(
                 tap((res) => {
                     const bins = res.data;
-                    this.bins.set(bins);
+                    this.bins.set(res.data);
 
                     console.log('Bins loaded:', bins);
 

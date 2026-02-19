@@ -151,6 +151,8 @@ namespace SmartEcoWaste.Services.Services
         {
             var users = await _smartEcoWasteDb.Users
                 .Include(u => u.Role)
+                .Include(u => u.UserReports)
+                .Include(u => u.Points)
                 .Where(u => u.IsDeleted == false)
                 .ToListAsync();
 
@@ -160,10 +162,9 @@ namespace SmartEcoWaste.Services.Services
             //get userpoints
             foreach (var user in results) {
                 user.RoleName = user.Role.Name;
-                user.Reports = await _smartEcoWasteDb.Reports.Where(r => r.IsDeleted == false && r.UserId == user.Id).CountAsync();
-                user.UserPoints = await _smartEcoWasteDb.UsersPoints
-                    .Where(up => up.UserId == user.Id)
-                    .SumAsync(up => up.Points);
+                user.Reports = user.UserReports!.Count;
+                user.UserPoints = user.Points!
+                    .Sum(up => up.Points);
             }
 
             return ServiceResponse<List<UserResponseDto>>.Success(
@@ -231,6 +232,28 @@ namespace SmartEcoWaste.Services.Services
             return ServiceResponse<List<Role>>.Success(
                 roles,
                 "Roles retrieved successfully"
+            );
+        }
+
+        public async Task<ServiceResponse<GetUserDto>> GetUser(int userId)
+        {
+            var user = await _smartEcoWasteDb.Users
+                .Include(u => u.UserReports)
+                .Include(u => u.Points)
+                .Where(u => u.IsDeleted == false)
+                .FirstOrDefaultAsync(u => u.Id == userId) ?? throw new Exception("User not found");
+
+            var results = new GetUserDto
+            {
+                Name = user.Name,
+                Email = user.Email,
+                Reports = user.UserReports!.Count,
+                Points = user.Points!.Sum(up => up.Points),
+            };
+
+            return ServiceResponse<GetUserDto>.Success(
+                results,
+                "User info retrieved successfully"
             );
         }
     }

@@ -19,5 +19,8 @@ namespace SmartEcoWaste.Data.Dtos
         public Role Role { get; set; }
         public int UserPoints { get; set; }
 
+        public ICollection<ReportDto>? UserReports { get; set; }
+        public ICollection<UserPointsDto>? Points { get; set; }
+
     }
 }

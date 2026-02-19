@@ -27,7 +27,7 @@ namespace SmartEcoWaste.Api.Controllers
             return Ok(await _userService.LoginAsync(user));
         }
 
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
         [HttpGet("get-all-users")]
         public async Task<IActionResult> GetAllUsers()
         {
@@ -39,6 +39,12 @@ namespace SmartEcoWaste.Api.Controllers
         public async Task<IActionResult> DeleteUser(int id)
         {
             return Ok(await _userService.DeleteUserAsync(id));
+        }
+
+        [HttpGet("get-user/{id}")]
+        public async Task<IActionResult> GetUser(int id)
+        {
+            return Ok(await _userService.GetUser(id));
         }
 
         [Authorize(Roles = "Admin")]

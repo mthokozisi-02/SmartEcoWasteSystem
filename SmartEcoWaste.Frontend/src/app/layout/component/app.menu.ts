@@ -35,7 +35,7 @@ export class AppMenu {
                     {
                         label: 'Profile',
                         icon: 'pi pi-fw pi-user',
-                        routerLink: ['/landing']
+                        routerLink: ['/pages/profile']
                     },
                     {
                         label: 'Bins',
@@ -48,9 +48,9 @@ export class AppMenu {
                                 role: 'Admin'
                             },
                             {
-                                label: 'View Bins',
+                                label: 'Manage Bins',
                                 icon: 'pi pi-fw pi-eye',
-                                routerLink: ['/pages/view-bins'],
+                                routerLink: ['/pages/manage-bins'],
                                 role: 'Admin'
                             }
                         ]

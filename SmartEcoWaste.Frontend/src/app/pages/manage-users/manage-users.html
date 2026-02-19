@@ -58,7 +58,7 @@
 
 <p-confirmdialog [style]="{ width: '450px' }" />
 
-<p-dialog [(visible)]="updateUserDialog" [style]="{ width: '450px' }" header="User Details" [modal]="true">
+<p-dialog [(visible)]="updateUserDialog" [style]="{ width: '250px' }" header="User Detail" [modal]="true">
     <ng-template #content>
         <div class="card flex justify-center">
             <p-select [options]="roles" appendTo="body" [(ngModel)]="selectedRole" optionLabel="name" placeholder="Select a Role" class="w-full md:w-56" />
