@@ -1,5 +1,4 @@
-﻿using SmartEcoWaste.Data.Enums;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace SmartEcoWaste.Data.Dtos
 {
-    public class ReportBinDto
+    public class UpdatePasswordDto
     {
         public int UserId { get; set; }
-        public int BinId { get; set; }
-        public Status Status { get; set; }
+        public string Password { get; set; }
     }
 }

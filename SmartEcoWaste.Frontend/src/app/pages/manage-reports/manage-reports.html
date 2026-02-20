@@ -6,9 +6,11 @@
 <div class="card">
     <p-tabs value="0">
         <p-tablist>
-            <p-tab value="0" (click)="allReports()" class="flex items-center !gap-2 text-inherit"><i class="pi pi-list"></i> <span>All Reports</span></p-tab>
-            <p-tab value="1" (click)="clearedReports()" class="flex items-center !gap-2 text-inherit"><i class="pi pi-check-circle"></i> <span>Cleared Reports</span></p-tab>
-            <p-tab value="2" (click)="unclearedReports()" class="flex items-center !gap-2 text-inherit"><i class="pi pi-times-circle"></i> <span>Uncleared Reports</span></p-tab>
+            <p-tab value="0" (click)="allReports()" class="flex items-center text-inherit"><i class="pi pi-list"></i> <span>All Reports</span></p-tab>
+            <p-tab value="1" (click)="EmptyReports()" class="flex items-center text-inherit"><p-button icon="fa-solid fa-trash" severity="success" text rounded />Emptied Bins</p-tab>
+            <p-tab value="2" (click)="FullReports()" class="flex items-center text-inherit"><p-button icon="fa-solid fa-trash" severity="danger" text rounded />Full Bins</p-tab>
+            <p-tab value="3" (click)="OverflowingReports()" class="flex items-center text-inherit"><p-button icon="fa-solid fa-trash" severity="warn" text rounded />Overflowing Bins</p-tab>
+            <p-tab value="4" (click)="DamagedReports()" class="flex items-center text-inherit"><p-button icon="fa-solid fa-trash" severity="help" text rounded />Damaged Bins</p-tab>
         </p-tablist>
         <p-tabpanels>
             <p class="m-0">
@@ -56,8 +58,8 @@
                                 <p-tag [value]="report.status" [severity]="getSeverity(report.status)" />
                             </td>
                             <td style="min-width: 12rem">{{ report.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
-                            <td *ngIf="category === 'All' || category === 'Cleared'" style="min-width: 8rem">{{ report.verifiedBy }}</td>
-                            <td *ngIf="category === 'All' || category === 'Cleared'" style="min-width: 12rem">{{ report.verifiedAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                            <td *ngIf="category === 'All' || category === 'Cleared'" style="min-width: 8rem">{{ report.verifiedBy == null ? "------" : report.verifiedBy }}</td>
+                            <td *ngIf="category === 'All' || category === 'Cleared'" style="min-width: 12rem">{{ report.verifiedAt == null ? "------ ----" : report.verifiedAt | date: 'yyyy-MM-dd HH:mm' }}</td>
                             <td>
                                 <p-button *ngIf="report.status === 'Full'" icon="pi pi-pencil" label="Clear" severity="info" class="mr-2" [rounded]="true" [outlined]="true" (click)="clearReport(report)" />
                                 <p-button icon="pi pi-trash" severity="danger" class="mr-2" [rounded]="true" [outlined]="true" (click)="deleteReport(report.id)" />

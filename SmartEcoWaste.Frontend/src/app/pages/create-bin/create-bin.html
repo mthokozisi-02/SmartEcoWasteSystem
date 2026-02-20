@@ -20,7 +20,11 @@
         <p-button label="Submit" [fluid]="false" [disabled]="!newBin.area || !newBin.latitude || !newBin.longitude" (click)="saveBin()"></p-button>
     </div>
     <p class="text-red-500">Select the location for the new bin on the map below</p>
-    <div class="flex flex-wrap items-start gap-6 mt-2">
+    <div class="flex flex-wrap items-start mt-2">
+        <p>
+            <span class="font-bold"> Key:</span> <p-button icon="fa-solid fa-trash" severity="success" text rounded />Empty <p-button icon="fa-solid fa-trash" severity="danger" text rounded />Full
+            <p-button icon="fa-solid fa-trash" severity="warn" text rounded />Overflowing <p-button icon="fa-solid fa-trash" severity="help" text rounded />Damaged
+        </p>
         <div id="map" class="w-full rounded-lg shadow" style="height: 500px"></div>
     </div>
 </div>

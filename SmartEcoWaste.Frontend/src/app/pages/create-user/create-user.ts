@@ -105,14 +105,15 @@ export class CreateUser {
             .pipe(
                 tap(() => {
                     this.showSuccess('User created successfully');
-                    this.createUserDialog = false;
                     this.loadUsers();
                 }),
                 catchError((err) => {
                     this.showError(err);
                     return [];
                 }),
-                finalize(() => (this.isLoading = false)),
+                finalize(() => {
+                    ((this.isLoading = false), (this.createUserDialog = false), (this.newUser = {} as CreateUserDto));
+                }),
                 takeUntilDestroyed(this.destroyRef)
             )
             .subscribe();

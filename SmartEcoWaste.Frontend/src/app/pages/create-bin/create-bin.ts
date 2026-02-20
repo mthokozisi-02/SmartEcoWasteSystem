@@ -163,24 +163,35 @@ export class CreateBin {
                 iconSize: [20, 20],
                 iconAnchor: [10, 10]
             });
-        }
-
-        if (status === StatusEnum.Full) {
+        } else if (status === StatusEnum.Full) {
             return L.divIcon({
                 html: `<i class="fa-solid fa-trash" style="color: rgba(209, 30, 30, 1); font-size: 20px;"></i>`,
                 className: '',
                 iconSize: [40, 40],
                 iconAnchor: [10, 10]
             });
+        } else if (status === StatusEnum.Overflowing) {
+            return L.divIcon({
+                html: `<i class="fa-solid fa-trash" style="color: rgba(255, 165, 0, 1); font-size: 20px;"></i>`,
+                className: '',
+                iconSize: [40, 40],
+                iconAnchor: [10, 10]
+            });
+        } else if (status === StatusEnum.Damaged) {
+            return L.divIcon({
+                html: `<i class="fa-solid fa-trash" style="color: rgba(255, 165, 0, 1); font-size: 20px;"></i>`,
+                className: '',
+                iconSize: [40, 40],
+                iconAnchor: [10, 10]
+            });
+        } else {
+            return L.divIcon({
+                html: `<i class="fa-solid fa-trash" style="color: gray; font-size: 20px;"></i>`,
+                className: '',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
         }
-
-        // Default fallback
-        return L.divIcon({
-            html: `<i class="fa-solid fa-trash" style="color: gray; font-size: 20px;"></i>`,
-            className: '',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
-        });
     }
 
     saveBin() {

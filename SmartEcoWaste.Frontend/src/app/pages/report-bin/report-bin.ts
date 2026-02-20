@@ -27,6 +27,7 @@ import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
+import { StatusEnum } from 'src/assets/enums/status-enum';
 
 @Component({
     selector: 'app-report-bin',
@@ -65,7 +66,11 @@ export class ReportBin implements OnInit {
 
     newReport: ReportBinDto = {} as ReportBinDto;
 
+    statusList = Object.values(StatusEnum);
+
     isLoading = false;
+
+    reportDialog = false;
 
     private destroyRef = inject(DestroyRef);
 
@@ -103,6 +108,10 @@ export class ReportBin implements OnInit {
             this.binId = Number(params.get('id'));
             console.log('Reporting bin ID:', this.binId);
         });
+    }
+
+    openDialog() {
+        this.reportDialog = true;
     }
 
     reportBin() {

@@ -1,4 +1,6 @@
 export enum StatusEnum {
     Emptied = 'Emptied',
-    Full = 'Full'
+    Full = 'Full',
+    Overflowing = 'Overflowing',
+    Damaged = 'Damaged'
 }

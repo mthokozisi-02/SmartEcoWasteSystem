@@ -7,6 +7,8 @@ namespace SmartEcoWaste.Data.Enums
     public enum Status
     {
         Emptied,
-        Full
+        Full,
+        Overflowing,
+        Damaged
     }
 }

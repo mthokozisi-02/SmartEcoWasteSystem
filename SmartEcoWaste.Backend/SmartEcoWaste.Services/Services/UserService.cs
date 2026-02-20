@@ -193,21 +193,21 @@ namespace SmartEcoWaste.Services.Services
             );
         }
 
-        public async Task<ServiceResponse<string>> UpdateUserAsync(UserDto userDto)
+        public async Task<ServiceResponse<string>> UpdateUserAsync(UpdatePasswordDto update)
         {
-            var user = await _smartEcoWasteDb.Users.FindAsync(userDto.Id);
+            var user = await _smartEcoWasteDb.Users.FindAsync(update.UserId);
             if (user == null)
             {
                 throw new Exception("User not found.");
             }
 
             user.PasswordHash = new PasswordHasher<User>()
-                .HashPassword(new User(), userDto.PasswordHash);
+                .HashPassword(new User(), update.Password);
 
             await _smartEcoWasteDb.SaveChangesAsync();
             return ServiceResponse<string>.Success(
                 "",
-                "User updated successfully");
+                "Password updated successfully");
         }
 
         public async Task<ServiceResponse<string>> DeleteUserAsync(int userId)

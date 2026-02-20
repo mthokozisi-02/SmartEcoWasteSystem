@@ -29,10 +29,22 @@
                 </div>
 
                 <div>
-                    <p-button label="Report Bin" styleClass="w-full mb-8 bg-blue-500 text-red-500" (click)="reportBin()"></p-button>
+                    <p-button label="Report Bin" styleClass="w-full mb-8 bg-blue-500 text-red-500" (click)="openDialog()"></p-button>
                     <p-button label="Visit Official Website" routerLink="/landing" styleClass="w-full" severity="info"></p-button>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<p-dialog [(visible)]="reportDialog" [style]="{ width: '250px' }" [modal]="true">
+    <ng-template #content>
+        <div class="card flex justify-center">
+            <p-select [options]="statusList" appendTo="body" [(ngModel)]="newReport.status" placeholder="Select a status" class="w-full md:w-56" />
+        </div>
+    </ng-template>
+
+    <ng-template #footer>
+        <p-button label="Report" icon="pi pi-check" (click)="reportBin()" />
+    </ng-template>
+</p-dialog>

@@ -30,9 +30,9 @@
                         </div>
                     </div>
                     <div class="flex flex-col md:items-end gap-8">
-                        <p-badge [value]="user.points" [severity]="userSeverity(user.points)" class="text-xl font-semibold text-surface-900 dark:text-surface-0" />
+                        <p-badge [value]="user.points + ' Points'" [severity]="userSeverity(user.points)" class="text-xl font-semibold text-surface-900 dark:text-surface-0" />
                         <div class="flex flex-row-reverse md:flex-row gap-2">
-                            <p-button icon="pi pi-pencil" class="flex-auto md:flex-initial whitespace-nowrap" label="Change Password" />
+                            <p-button icon="pi pi-pencil" class="flex-auto md:flex-initial whitespace-nowrap" label="Change Password" (click)="changePassword()" />
                         </div>
                     </div>
                 </div>
@@ -40,3 +40,18 @@
         </div>
     </div>
 </div>
+
+<p-dialog [(visible)]="updateUserDialog" [style]="{ width: '250px' }" header="New Password" [modal]="true">
+    <ng-template #content>
+        <div class="flex flex-wrap items-start gap-6">
+            <div class="field">
+                <label for="Password" class="sr-only">Password</label>
+                <input pInputText id="Latitude" [(ngModel)]="newPassword.password" type="text" placeholder="password" />
+            </div>
+        </div>
+    </ng-template>
+
+    <ng-template #footer>
+        <p-button label="Save" icon="pi pi-check" (click)="updatePassword()" />
+    </ng-template>
+</p-dialog>

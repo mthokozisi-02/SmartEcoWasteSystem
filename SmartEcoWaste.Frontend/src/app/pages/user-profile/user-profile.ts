@@ -13,11 +13,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BadgeModule } from 'primeng/badge';
 import { ImageModule } from 'primeng/image';
+import { UpdatePasswordDto } from 'src/assets/interfaces/update-password-dto';
+import { DialogModule } from 'primeng/dialog';
+import { Router } from '@angular/router';
+import { AuthService } from '@/core/services/auth.service';
 
 @Component({
     selector: 'app-user-profile',
     standalone: true,
-    imports: [ButtonModule, BadgeModule, ImageModule, DataViewModule, FormsModule, TagModule, ProgressSpinnerModule, ToastModule, CommonModule],
+    imports: [ButtonModule, BadgeModule, DialogModule, ImageModule, DataViewModule, FormsModule, TagModule, ProgressSpinnerModule, ToastModule, CommonModule],
     templateUrl: './user-profile.html',
     styleUrl: './user-profile.scss',
     providers: [MessageService]
@@ -25,7 +29,11 @@ import { ImageModule } from 'primeng/image';
 export class UserProfile {
     user: GetUserDto = {} as GetUserDto;
 
+    newPassword: UpdatePasswordDto = {} as UpdatePasswordDto;
+
     isLoading = false;
+
+    updateUserDialog = false;
 
     private destroyRef = inject(DestroyRef);
 
@@ -51,7 +59,9 @@ export class UserProfile {
 
     constructor(
         private userService: UserService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private authService: AuthService,
+        private router: Router
     ) {}
 
     ngOnInit() {
@@ -80,5 +90,33 @@ export class UserProfile {
         if (points === 0) return 'danger';
         else if (points > 0 && points < 500) return 'warn';
         else return 'success';
+    }
+
+    changePassword() {
+        this.updateUserDialog = true;
+    }
+
+    updatePassword() {
+        this.isLoading = true;
+        this.newPassword.userId = Number(localStorage.getItem('user_id'));
+
+        this.userService
+            .updateUserPassword(this.newPassword)
+            .pipe(
+                tap((res) => {
+                    this.showSuccess(res.data);
+                    this.authService.logout();
+                    this.router.navigate(['/auth/login']);
+                }),
+                catchError((err) => {
+                    this.showError(err);
+                    return [];
+                }),
+                finalize(() => {
+                    ((this.isLoading = false), (this.updateUserDialog = false), (this.newPassword = {} as UpdatePasswordDto));
+                }),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
     }
 }

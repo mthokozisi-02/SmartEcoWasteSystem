@@ -47,9 +47,8 @@ namespace SmartEcoWaste.Api.Controllers
             return Ok(await _userService.GetUser(id));
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpPut("update-user")]
-        public async Task<IActionResult> UpdateUser([FromBody] UserDto user)
+        [HttpPut("update-user-password")]
+        public async Task<IActionResult> UpdateUser([FromBody] UpdatePasswordDto user)
         {
             return Ok(await _userService.UpdateUserAsync(user));
         }

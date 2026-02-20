@@ -112,16 +112,22 @@ export class ManageReports {
     }
 
     private loadReports(report: any) {
+        this.isLoading = true;
+
         this.reportService
             .getAll()
             .pipe(
                 tap((res) => {
                     if (report == 'All') {
                         this.filteredReports.set(res.data);
-                    } else if (report == 'Cleared') {
+                    } else if (report == 'Emptied') {
                         this.filteredReports.set(res.data.filter((r: ReportResponseDto) => r.status == StatusEnum.Emptied));
-                    } else if (report == 'Uncleared') {
+                    } else if (report == 'Full') {
                         this.filteredReports.set(res.data.filter((r: ReportResponseDto) => r.status == StatusEnum.Full));
+                    } else if (report == 'Overflowing') {
+                        this.filteredReports.set(res.data.filter((r: ReportResponseDto) => r.status == StatusEnum.Overflowing));
+                    } else if (report == 'Damaged') {
+                        this.filteredReports.set(res.data.filter((r: ReportResponseDto) => r.status == StatusEnum.Damaged));
                     }
                     console.log('reports:', this.filteredReports());
                 }),
@@ -160,7 +166,9 @@ export class ManageReports {
                             this.showError(err);
                             return [];
                         }),
-                        finalize(() => (this.isLoading = false)),
+                        finalize(() => {
+                            ((this.isLoading = false), (this.clearReportDialog = false));
+                        }),
                         takeUntilDestroyed(this.destroyRef)
                     )
                     .subscribe();
@@ -217,6 +225,10 @@ export class ManageReports {
                 return 'success';
             case 'Full':
                 return 'danger';
+            case 'Overflowing':
+                return 'warn';
+            case 'Damaged':
+                return 'help';
             default:
                 return 'info';
         }
@@ -227,13 +239,23 @@ export class ManageReports {
         this.loadReports(this.category);
     }
 
-    clearedReports() {
-        this.category = 'Cleared';
+    EmptyReports() {
+        this.category = 'Emptied';
         this.loadReports(this.category);
     }
 
-    unclearedReports() {
-        this.category = 'Uncleared';
+    FullReports() {
+        this.category = 'Full';
+        this.loadReports(this.category);
+    }
+
+    OverflowingReports() {
+        this.category = 'Overflowing';
+        this.loadReports(this.category);
+    }
+
+    DamagedReports() {
+        this.category = 'Damaged';
         this.loadReports(this.category);
     }
 }

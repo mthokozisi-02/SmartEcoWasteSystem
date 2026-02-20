@@ -100,13 +100,13 @@ namespace SmartEcoWaste.Services.Services
                 if (bin is null)
                     return ServiceResponse<string>.Fail("Bin not found.");
 
-                bin.Status = Data.Enums.Status.Full;
+                bin.Status = report.Status;
 
                 var newReport = new Report
                 {
                     UserId = report.UserId,
                     BinId = report.BinId,
-                    Status = Data.Enums.Status.Full
+                    Status = report.Status,
                 };
 
                 await _smartEcoWasteDbContext.Reports.AddAsync(newReport);
