@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SmartEcoWaste.Infrastructure.DbContexts;
 using SmartEcoWaste.Infrastructure.Middleware;
+using SmartEcoWaste.Infrastructure.Seeding;
 using SmartEcoWaste.Services.Interfaces;
 using SmartEcoWaste.Services.Services;
 
@@ -60,6 +61,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider
+        .GetRequiredService<SmartEcoWasteDbContext>();
+
+    await DbSeeder.SeedAsync(dbContext);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -20,7 +20,7 @@ namespace SmartEcoWaste.Api.Controllers
             return Ok(await _binService.CreateBinAsync(binDto));
         }
 
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
         [HttpGet("get-all-bins")]
         public async Task<IActionResult> GetAllBins()
         {

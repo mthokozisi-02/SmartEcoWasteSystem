@@ -29,6 +29,38 @@ namespace SmartEcoWaste.Services.Services
                 $"{report.Id} report deleted successfully";
         }
 
+        public async Task<ServiceResponse<GraphDataDto>> GetGraphDataAsync()
+        {
+            var topUsers = await _smartEcoWasteDbContext.Reports
+                .GroupBy(r => new { r.UserId, r.User.Name })
+                .Select(g => new
+                {
+                    Username = g.Key.Name,
+                    TotalReports = g.Count(),
+                    EmptiedCount = g.Count(r => r.Status == Data.Enums.Status.Emptied),
+                    FullCount = g.Count(r => r.Status == Data.Enums.Status.Full),
+                    OverflowingCount = g.Count(r => r.Status == Data.Enums.Status.Overflowing),
+                    DamagedCount = g.Count(r => r.Status == Data.Enums.Status.Damaged)
+                })
+                .OrderByDescending(x => x.TotalReports)
+                .Take(4)
+                .ToListAsync();
+
+            var results = new GraphDataDto
+            {
+                Users = [.. topUsers.Select(x => x.Username)],
+                EmptiedData = [.. topUsers.Select(x => x.EmptiedCount)],
+                FullData = [.. topUsers.Select(x => x.FullCount)],
+                OverflowingData = [.. topUsers.Select(x => x.OverflowingCount)],
+                DamagedData = [.. topUsers.Select(x => x.DamagedCount)],
+            };
+
+            return ServiceResponse<GraphDataDto>.Success(
+                results,
+                "Data retrieved successfully"
+            );
+        }
+
         public async Task<ServiceResponse<List<GetReportsDto>>> GetReportsAsync()
         {
             var reports = await _smartEcoWasteDbContext.Reports

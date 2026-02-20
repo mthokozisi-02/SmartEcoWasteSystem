@@ -8,6 +8,7 @@ import { ManageUsers } from './manage-users/manage-users';
 import { ManageReports } from './manage-reports/manage-reports';
 import { ManageBins } from './manage-bins/manage-bins';
 import { UserProfile } from './user-profile/user-profile';
+import { Signup } from './auth/signup';
 
 export default [
     { path: 'report-bin', component: ReportBin },

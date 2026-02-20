@@ -13,7 +13,7 @@ namespace SmartEcoWaste.Api.Controllers
         private readonly IReportBin _reportBin = reportBin;
 
 
-        [Authorize(Roles = "Admin")]
+   
         [HttpGet("get-all-reports")]
         public async Task<IActionResult> GetAllReports()
         {
@@ -32,6 +32,12 @@ namespace SmartEcoWaste.Api.Controllers
         public async Task<IActionResult> DeleteReport(int id)
         {
             return Ok(await _reportBin.DeleteReport(id));
+        }
+
+        [HttpGet("get-graph-data")]
+        public async Task<IActionResult> GetAllData()
+        {
+            return Ok(await _reportBin.GetGraphDataAsync());
         }
     }
 }

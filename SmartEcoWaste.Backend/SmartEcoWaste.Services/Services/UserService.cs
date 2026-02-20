@@ -195,12 +195,7 @@ namespace SmartEcoWaste.Services.Services
 
         public async Task<ServiceResponse<string>> UpdateUserAsync(UpdatePasswordDto update)
         {
-            var user = await _smartEcoWasteDb.Users.FindAsync(update.UserId);
-            if (user == null)
-            {
-                throw new Exception("User not found.");
-            }
-
+            var user = await _smartEcoWasteDb.Users.FindAsync(update.UserId) ?? throw new Exception("User not found.");
             user.PasswordHash = new PasswordHasher<User>()
                 .HashPassword(new User(), update.Password);
 

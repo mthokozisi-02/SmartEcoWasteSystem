@@ -15,6 +15,10 @@ export class ReportService {
         return this.http.get<any>(`${apiUrl}/get-all-reports`);
     }
 
+    getAllUserData(): Observable<any> {
+        return this.http.get<any>(`${apiUrl}/get-graph-data`);
+    }
+
     clearReport(report: VerifyBinDto): Observable<any> {
         console.log(report);
         return this.http.post<any>(`${apiUrl}/verify-report`, report);

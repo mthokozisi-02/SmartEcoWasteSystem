@@ -25,6 +25,10 @@ namespace SmartEcoWaste.Infrastructure.DbContexts
             base.OnModelCreating(modelBuilder);
             // Configure your entity relationships and mappings here
 
+            modelBuilder.Entity<User>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
             modelBuilder.Entity<Report>()
             .HasOne(r => r.VerifyByUser)
             .WithMany()

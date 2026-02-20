@@ -16,9 +16,11 @@ import { MessageService } from 'primeng/api';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
 import { CommonModule } from '@angular/common';
+import { CreateUserDto } from 'src/assets/interfaces/create-user-dto';
+import { UserService } from '@/core/services/user.service';
 
 @Component({
-    selector: 'app-login',
+    selector: 'app-sign-up',
     standalone: true,
     imports: [ButtonModule, ProgressSpinner, ToastModule, CommonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
     template: `
@@ -50,24 +52,20 @@ import { CommonModule } from '@angular/common';
                                 </g>
                             </svg>
                             <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Welcome to Smart Eco-Waste System!</div>
-                            <span class="text-muted-color font-medium">Sign in to continue</span>
+                            <span class="text-muted-color font-medium">Sign up to continue</span>
                         </div>
 
                         <div>
+                            <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">User Name</label>
+                            <input pInputText id="name" type="text" placeholder="Username" class="w-full md:w-120 mb-8" [(ngModel)]="newUser.name" />
+
                             <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
-                            <input pInputText id="email1" type="text" placeholder="Email address" class="w-full md:w-120 mb-8" [(ngModel)]="loginInfo.email" />
+                            <input pInputText id="email1" type="text" placeholder="Email address" class="w-full md:w-120 mb-8" [(ngModel)]="newUser.email" />
 
                             <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
-                            <p-password id="password1" [(ngModel)]="loginInfo.passwordHash" placeholder="Password" [toggleMask]="true" styleClass="mb-4" [fluid]="true" [feedback]="false"></p-password>
+                            <p-password id="password1" [(ngModel)]="newUser.passwordHash" placeholder="Password" [toggleMask]="true" styleClass="mb-4" [fluid]="true" [feedback]="false"></p-password>
 
-                            <div class="flex items-center justify-between mt-2 mb-8 gap-8">
-                                <div class="flex items-center">
-                                    <p-checkbox [(ngModel)]="checked" id="rememberme1" binary class="mr-2"></p-checkbox>
-                                    <label for="rememberme1">Remember me</label>
-                                </div>
-                                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary" (click)="signUp()">Sign up?</span>
-                            </div>
-                            <p-button label="Sign In" styleClass="w-full" (click)="onLogin()"></p-button>
+                            <p-button label="Sign Up" styleClass="w-full" (click)="signUp()"></p-button>
                         </div>
                     </div>
                 </div>
@@ -76,8 +74,8 @@ import { CommonModule } from '@angular/common';
     `,
     providers: [MessageService]
 })
-export class Login {
-    loginInfo: LoginDto = {} as LoginDto;
+export class Signup {
+    newUser: CreateUserDto = {} as CreateUserDto;
 
     checked: boolean = false;
     isLoading = false;
@@ -108,6 +106,7 @@ export class Login {
     constructor(
         private authService: AuthService,
         private messageService: MessageService,
+        private userService: UserService,
         private route: ActivatedRoute,
         private router: Router
     ) {}
@@ -118,19 +117,17 @@ export class Login {
         }
     }
 
-    onLogin() {
+    signUp() {
         this.isLoading = true;
         this.errorMessage = '';
 
-        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/';
-
-        this.authService
-            .login(this.loginInfo)
+        this.userService
+            .createUser(this.newUser)
             .pipe(
                 tap((res) => {
-                    console.log('Login response:', res);
-                    this.showSuccess('Login successful');
-                    this.router.navigateByUrl(returnUrl);
+                    console.log('Sign up response:', res);
+                    this.showSuccess('Sign up successful');
+                    this.router.navigate(['/auth/login'], {});
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -138,14 +135,10 @@ export class Login {
                 }),
                 finalize(() => {
                     this.isLoading = false;
-                    this.loginInfo = {} as LoginDto;
+                    this.newUser = {} as CreateUserDto;
                 }),
                 takeUntilDestroyed(this.destroyRef)
             )
             .subscribe();
-    }
-
-    signUp() {
-        this.router.navigate(['/auth/sign-up'], {});
     }
 }
