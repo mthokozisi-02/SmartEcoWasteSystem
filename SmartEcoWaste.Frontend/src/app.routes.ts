@@ -20,5 +20,5 @@ export const appRoutes: Routes = [
     { path: 'notfound', component: Notfound },
     { path: 'report/:id', component: ReportBin },
     { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
-    { path: '**', redirectTo: '/auth/login' }
+    { path: '**', redirectTo: '/landing' }
 ];

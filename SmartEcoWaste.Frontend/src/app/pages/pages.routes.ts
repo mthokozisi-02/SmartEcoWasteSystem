@@ -18,5 +18,5 @@ export default [
     { path: 'manage-users', component: ManageUsers },
     { path: 'manage-reports', component: ManageReports },
     { path: 'profile', component: UserProfile },
-    { path: '**', redirectTo: '/auth/login' }
+    { path: '**', redirectTo: '/landing' }
 ] as Routes;

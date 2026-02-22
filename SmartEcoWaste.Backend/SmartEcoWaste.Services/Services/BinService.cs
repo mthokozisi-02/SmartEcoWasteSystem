@@ -100,6 +100,15 @@ namespace SmartEcoWaste.Services.Services
                 if (bin is null)
                     return ServiceResponse<string>.Fail("Bin not found.");
 
+                var IsReported = await _smartEcoWasteDbContext.Reports
+                    .Where(r => r.BinId == report.BinId && r.IsDeleted == false && r.Status == Data.Enums.Status.Full)
+                    .FirstOrDefaultAsync();
+
+                if (IsReported != null)
+                {
+                    return ServiceResponse<string>.Fail("Bin is already reported as full.");
+                }
+
                 bin.Status = report.Status;
 
                 var newReport = new Report

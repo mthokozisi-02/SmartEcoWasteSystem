@@ -25,7 +25,7 @@ import { AppFloatingConfigurator } from '@/layout/component/app.floatingconfigur
                 <ul class="list-none p-0 m-0 flex lg:items-center text-white select-none flex-col lg:flex-row cursor-pointer gap-8"></ul>
                 <div class="flex border-t lg:items-end lg:border-t-0 border-surface py-4 lg:py-0 mt-4 lg:mt-0 gap-2">
                     <button pButton pRipple label="Login" routerLink="/auth/login" [rounded]="true" [text]="true"></button>
-                    <button pButton pRipple label="Register" routerLink="/auth/login" [rounded]="true"></button>
+                    <button pButton pRipple label="Register" routerLink="/auth/sign-up" [rounded]="true"></button>
                     <app-floating-configurator [float]="false" />
                 </div>
             </div>
