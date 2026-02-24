@@ -101,7 +101,7 @@ namespace SmartEcoWaste.Services.Services
                     return ServiceResponse<string>.Fail("Bin not found.");
 
                 var IsReported = await _smartEcoWasteDbContext.Reports
-                    .Where(r => r.BinId == report.BinId && r.IsDeleted == false && r.Status == Data.Enums.Status.Full)
+                    .Where(r => r.BinId == report.BinId && r.IsDeleted == false && r.Status == report.Status)
                     .FirstOrDefaultAsync();
 
                 if (IsReported != null)
