@@ -2,8 +2,9 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { VerifyBinDto } from 'src/assets/interfaces/verify-bin-dto';
+import { environment } from 'src/environments/environment';
 
-const apiUrl = 'https://localhost:7107/api';
+const apiUrl = environment.apiUrl;
 
 @Injectable({
     providedIn: 'root'

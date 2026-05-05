@@ -5,8 +5,9 @@ import { Observable } from 'rxjs';
 import { CreateUserDto } from 'src/assets/interfaces/create-user-dto';
 import { UpdatePasswordDto } from 'src/assets/interfaces/update-password-dto';
 import { UpdateRoleDto } from 'src/assets/interfaces/update-role-dto';
+import { environment } from 'src/environments/environment';
 
-const apiUrl = 'https://localhost:7107/api';
+const apiUrl = environment.apiUrl;
 
 @Injectable({
     providedIn: 'root'

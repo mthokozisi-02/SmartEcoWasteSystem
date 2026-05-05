@@ -4,8 +4,9 @@ import { Observable } from 'rxjs';
 import { CreateBinDto } from 'src/assets/interfaces/create-bin-dto';
 import { CreateUserDto } from 'src/assets/interfaces/create-user-dto';
 import { ReportBinDto } from 'src/assets/interfaces/report-bin-dto';
+import { environment } from 'src/environments/environment';
 
-const apiUrl = 'https://localhost:7107/api';
+const apiUrl = environment.apiUrl;
 
 @Injectable({
     providedIn: 'root'

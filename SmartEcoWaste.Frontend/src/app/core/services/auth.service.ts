@@ -6,8 +6,9 @@ import { tap, catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { AuthResponse } from 'src/assets/interfaces/auth-response';
 import { LoginDto } from 'src/assets/interfaces/login-dto';
+import { environment } from 'src/environments/environment';
 
-const apiUrl = 'https://localhost:7107/api';
+const apiUrl = environment.apiUrl;
 
 @Injectable({
     providedIn: 'root'
