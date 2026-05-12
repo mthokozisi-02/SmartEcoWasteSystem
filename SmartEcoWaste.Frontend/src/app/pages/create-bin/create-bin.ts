@@ -71,6 +71,8 @@ export class CreateBin {
 
     qrCodeDialog = false;
 
+    frontendUrl = window.location.origin;
+
     private destroyRef = inject(DestroyRef);
 
     private showSuccess(message: string) {
@@ -196,6 +198,9 @@ export class CreateBin {
 
     saveBin() {
         this.isLoading = true;
+        this.newBin.url = this.frontendUrl;
+
+        console.log(this.newBin);
 
         this.binService
             .createBin(this.newBin)

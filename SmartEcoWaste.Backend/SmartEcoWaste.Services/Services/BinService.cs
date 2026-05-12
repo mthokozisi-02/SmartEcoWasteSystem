@@ -29,7 +29,7 @@ namespace SmartEcoWaste.Services.Services
                 await _smartEcoWasteDbContext.Bins.AddAsync(newBin);
                 await _smartEcoWasteDbContext.SaveChangesAsync();
 
-                var url = $"http://localhost:4200/report/{newBin.Id}";
+                var url = $"{binDto.Url}/report/{newBin.Id}";
                 newBin.QrCodeUrl = url;
 
                 // 4️⃣ Save again to update QrCodeUrl

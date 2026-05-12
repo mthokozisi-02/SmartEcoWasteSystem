@@ -12,5 +12,6 @@ namespace SmartEcoWaste.Data.Dtos
         public string? Area { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
+        public string Url { get; set; }
     }
 }
