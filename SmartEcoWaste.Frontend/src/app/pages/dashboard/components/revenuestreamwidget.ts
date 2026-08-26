@@ -14,9 +14,8 @@ import { MessageService } from 'primeng/api';
     selector: 'app-revenue-stream-widget',
     imports: [ChartModule],
     providers: [MessageService],
-    template: `<div class="card mb-8!">
-        <div class="font-semibold text-xl mb-4">User Report Stream</div>
-        <p-chart type="bar" [data]="chartData" [options]="chartOptions" class="h-100" />
+    template: `<div class="card mb-8! rounded-2xl flex flex-col justify-between font-bold transition-all duration-300" style="color: #67e8f9; border: 1px solid rgba(16,185,129,0.15); background: rgba(16,185,129,0.04);">
+        <p-chart type="bar" [data]="chartData" [options]="chartOptions" class="h-100 font-bold text-xs text-white uppercase tracking-widest" style="color: #67e8f9;" />
     </div>`
 })
 export class RevenueStreamWidget {
@@ -104,7 +103,7 @@ export class RevenueStreamWidget {
             plugins: {
                 legend: {
                     labels: {
-                        color: textColor
+                        color: '#67e8f9'
                     }
                 }
             },
@@ -112,7 +111,7 @@ export class RevenueStreamWidget {
                 x: {
                     stacked: true,
                     ticks: {
-                        color: textMutedColor
+                        color: '#67e8f9'
                     },
                     grid: {
                         color: 'transparent',
@@ -122,7 +121,7 @@ export class RevenueStreamWidget {
                 y: {
                     stacked: true,
                     ticks: {
-                        color: textMutedColor
+                        color: '#67e8f9'
                     },
                     grid: {
                         color: borderColor,

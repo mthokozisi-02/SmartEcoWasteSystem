@@ -1,5 +1,5 @@
 import { AppFloatingConfigurator } from '@/layout/component/app.floatingconfigurator';
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, AfterViewInit } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -28,6 +28,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { StatusEnum } from 'src/assets/enums/status-enum';
+import * as L from 'leaflet';
 
 @Component({
     selector: 'app-report-bin',
@@ -63,14 +64,19 @@ import { StatusEnum } from 'src/assets/enums/status-enum';
 })
 export class ReportBin implements OnInit {
     binId!: number;
+    bin: any = null;
+    map!: L.Map;
 
-    newReport: ReportBinDto = {} as ReportBinDto;
+    newReport: ReportBinDto = {
+        binId: 0,
+        userId: 0,
+        status: StatusEnum.Full
+    };
 
+    // Expose enum so the template can reference it
+    StatusEnum = StatusEnum;
     statusList = Object.values(StatusEnum);
-
     isLoading = false;
-
-    reportDialog = false;
 
     private destroyRef = inject(DestroyRef);
 
@@ -103,15 +109,62 @@ export class ReportBin implements OnInit {
     ) {}
 
     ngOnInit(): void {
-        // Get the 'id' parameter from the route
         this.route.paramMap.subscribe((params) => {
             this.binId = Number(params.get('id'));
             console.log('Reporting bin ID:', this.binId);
+            this.loadBinDetails();
         });
     }
 
-    openDialog() {
-        this.reportDialog = true;
+    loadBinDetails() {
+        this.isLoading = true;
+        this.binService
+            .getAll()
+            .pipe(
+                tap((res) => {
+                    const bins = res.data || [];
+                    this.bin = bins.find((b: any) => b.id === this.binId) || null;
+                    if (this.bin) {
+                        this.initializeMap();
+                    } else {
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Bin not found in system',
+                            life: 4000
+                        });
+                    }
+                }),
+                catchError((err) => {
+                    this.showError(err);
+                    return [];
+                }),
+                finalize(() => (this.isLoading = false)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
+    }
+
+    initializeMap() {
+        setTimeout(() => {
+            if (!this.bin) return;
+            
+            // Set up map centered on bin coordinates
+            this.map = L.map('report-map').setView([this.bin.latitude, this.bin.longitude], 16);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(this.map);
+
+            // Add marker for bin
+            L.marker([this.bin.latitude, this.bin.longitude]).addTo(this.map)
+                .bindPopup(`<b>Smart Bin #${this.bin.id}</b><br>${this.trimToThirdComma(this.bin.area)}`)
+                .openPopup();
+        }, 150);
+    }
+
+    selectStatus(status: string) {
+        this.newReport.status = status as StatusEnum;
     }
 
     reportBin() {
@@ -134,8 +187,10 @@ export class ReportBin implements OnInit {
             .pipe(
                 tap((res) => {
                     console.log('Report response:', res);
-                    this.showSuccess('Bin reported successfully');
-                    this.router.navigateByUrl('/');
+                    this.showSuccess('Bin reported successfully! +25 Eco Points added to your profile.');
+                    setTimeout(() => {
+                        this.router.navigateByUrl('/landing');
+                    }, 2000);
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -145,5 +200,25 @@ export class ReportBin implements OnInit {
                 takeUntilDestroyed(this.destroyRef)
             )
             .subscribe();
+    }
+
+    getSeverity(status: StatusEnum): string {
+        switch (status) {
+            case StatusEnum.Emptied:
+                return 'success';
+            case StatusEnum.Full:
+                return 'warn';
+            case StatusEnum.Overflowing:
+                return 'danger';
+            default:
+                return 'info';
+        }
+    }
+
+    trimToThirdComma(str: string | null): string {
+        if (!str) return 'Unknown Area';
+        const parts = str.split(',');
+        if (parts.length <= 3) return str;
+        return parts.slice(0, 3).join(',').trim();
     }
 }

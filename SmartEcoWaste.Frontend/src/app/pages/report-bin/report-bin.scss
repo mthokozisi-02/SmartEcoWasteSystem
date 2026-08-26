@@ -1,0 +1,28 @@
+/* Report Bin page — standalone dark-theme overrides */
+:host {
+    display: block;
+    min-height: 100vh;
+}
+
+/* Leaflet popup dark theme */
+:host ::ng-deep .leaflet-popup-content-wrapper {
+    background: #0d1f17 !important;
+    border: 1px solid rgba(16, 185, 129, 0.2) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6) !important;
+    color: #d1fae5 !important;
+}
+
+:host ::ng-deep .leaflet-popup-tip {
+    background: #0d1f17 !important;
+}
+
+:host ::ng-deep .leaflet-popup-close-button {
+    color: rgba(209, 250, 229, 0.5) !important;
+}
+
+:host ::ng-deep .leaflet-control-zoom a {
+    background: #0d1f17 !important;
+    border-color: rgba(16, 185, 129, 0.2) !important;
+    color: #34d399 !important;
+}

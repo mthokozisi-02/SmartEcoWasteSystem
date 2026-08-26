@@ -18,8 +18,8 @@ import { ButtonModule } from 'primeng/button';
                 <i class="pi pi-bars"></i>
             </button>
             <a class="layout-topbar-logo" routerLink="/">
-                <span class="text-5xl">♻️</span>
-                <span>S E-W S</span>
+                <i class="fa-solid fa-recycle text-emerald-600 text-2xl mr-2"></i>
+                <span class="font-bold text-xl text-surface-900 dark:text-surface-0">Smart<span class="text-emerald-600">Eco</span>Waste</span>
             </a>
         </div>
 
