@@ -61,7 +61,7 @@
                             <td *ngIf="category === 'All' || category === 'Cleared'" style="min-width: 8rem">{{ report.verifiedBy == null ? "------" : report.verifiedBy }}</td>
                             <td *ngIf="category === 'All' || category === 'Cleared'" style="min-width: 12rem">{{ report.verifiedAt == null ? "------ ----" : report.verifiedAt | date: 'yyyy-MM-dd HH:mm' }}</td>
                             <td>
-                                <p-button *ngIf="report.status === 'Full'" icon="pi pi-pencil" label="Clear" severity="info" class="mr-2" [rounded]="true" [outlined]="true" (click)="clearReport(report)" />
+                                <p-button *ngIf="report.status === 'Full' || report.status === 'Overflowing' || report.status === 'Damaged'" icon="pi pi-pencil" label="Clear" severity="info" class="mr-2" [rounded]="true" [outlined]="true" (click)="clearReport(report)" />
                                 <p-button icon="pi pi-trash" severity="danger" class="mr-2" [rounded]="true" [outlined]="true" (click)="deleteReport(report.id)" />
                             </td>
                         </tr>

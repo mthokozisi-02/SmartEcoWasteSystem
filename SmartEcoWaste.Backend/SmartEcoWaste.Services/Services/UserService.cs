@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Update;
@@ -67,16 +67,31 @@ namespace SmartEcoWaste.Services.Services
 
         public async Task<ServiceResponse<TokenResponseDto>> LoginAsync(LoginDto userDto)
         {
+            var query = _smartEcoWasteDb.Users
+                .IgnoreQueryFilters()
+                .Include(u => u.Role)
+                .Include(u => u.Tenant)
+                .Where(u => !u.IsDeleted && u.Email == userDto.Email);
 
-            var user = await _smartEcoWasteDb.Users
-            .Include(u => u.Role)
-            .FirstOrDefaultAsync(u => u.Email == userDto.Email);
+            if (!string.IsNullOrWhiteSpace(userDto.TenantCode))
+            {
+                query = query.Where(u => u.Tenant != null && u.Tenant.Code == userDto.TenantCode.Trim());
+            }
+            else if (userDto.TenantId.HasValue && userDto.TenantId.Value > 0)
+            {
+                query = query.Where(u => u.TenantId == userDto.TenantId.Value);
+            }
+
+            var user = await query.FirstOrDefaultAsync();
+            if (user == null)
+            {
+                return ServiceResponse<TokenResponseDto>.Fail("Invalid email, password, or tenant workspace.");
+            }
 
             if (new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, userDto.PasswordHash)
                 == PasswordVerificationResult.Success)
             {
                 var response = await CreateTokenResponse(user);
-
                 return response;
             }
             else
@@ -87,11 +102,23 @@ namespace SmartEcoWaste.Services.Services
 
         private async Task<ServiceResponse<TokenResponseDto>> CreateTokenResponse(User user)
         {
+            if (user.Tenant == null && user.TenantId > 0)
+            {
+                user.Tenant = await _smartEcoWasteDb.Tenants
+                    .FirstOrDefaultAsync(t => t.Id == user.TenantId);
+            }
+
             var response = new TokenResponseDto
             {
                 AccessToken = CreateToken(user),
                 RefreshToken = await GenerateAndSaveRefreshTokenAsync(user),
-                ExpiresIn = 24 * 60 * 60 // 1 day in seconds
+                ExpiresIn = 24 * 60 * 60, // 1 day in seconds
+                TenantId = user.TenantId,
+                TenantName = user.Tenant?.Name ?? "Main Workspace",
+                TenantCode = user.Tenant?.Code ?? "MAIN",
+                OrganizationType = user.Tenant?.OrganizationType ?? "CommercialMall",
+                Role = user.Role?.Name ?? "User",
+                UserName = user.Name
             };
 
             return ServiceResponse<TokenResponseDto>.Success(
@@ -124,9 +151,12 @@ namespace SmartEcoWaste.Services.Services
             var claims = new List<Claim>
             {
                 new(ClaimTypes.Name, user.Email),
-                new(ClaimTypes.NameIdentifier, user.Id.ToString()!),
-                new(ClaimTypes.Role, user.Role.Name)
-
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Role, user.Role?.Name ?? "User"),
+                new("TenantId", user.TenantId.ToString()),
+                new("TenantCode", user.Tenant?.Code ?? ""),
+                new("TenantName", user.Tenant?.Name ?? ""),
+                new("OrganizationType", user.Tenant?.OrganizationType ?? "CommercialMall")
             };
 
             var key = new SymmetricSecurityKey(
@@ -143,8 +173,6 @@ namespace SmartEcoWaste.Services.Services
             );
 
             return new JwtSecurityTokenHandler().WriteToken(tokenDecriptor);
-
-
         }
 
         public async Task<ServiceResponse<List<UserResponseDto>>> GetAllAsync()

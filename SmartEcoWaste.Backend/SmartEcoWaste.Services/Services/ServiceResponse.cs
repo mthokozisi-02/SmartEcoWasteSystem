@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace SmartEcoWaste.Services.Services
 {
     public class ServiceResponse<T>
     {
-        public bool? IsSuccess { get; set; }
+        public bool IsSuccess { get; set; } = true;
         public string? Message { get; set; }
         public DateTime? Time { get; set; }
         public T? Data { get; set; }
@@ -23,7 +23,7 @@ namespace SmartEcoWaste.Services.Services
             Data = data;
         }
 
-        public static ServiceResponse<T> Success(T data, string message)
+        public static ServiceResponse<T> Success(T data, string message = "Success")
         => new()
         {
             IsSuccess = true,

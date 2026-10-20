@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MenuItem } from 'primeng/api';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -21,6 +21,13 @@ import { ButtonModule } from 'primeng/button';
                 <i class="fa-solid fa-recycle text-emerald-600 text-2xl mr-2"></i>
                 <span class="font-bold text-xl text-surface-900 dark:text-surface-0">Smart<span class="text-emerald-600">Eco</span>Waste</span>
             </a>
+        </div>
+
+        <!-- Tenant Workspace Active Badge -->
+        <div class="hidden sm:flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-xs font-bold text-surface-800 dark:text-surface-100 shadow-sm">
+            <i [class]="getTenantIcon()"></i>
+            <span class="truncate max-w-[220px]">{{ tenantName }}</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-300">{{ tenantCode }}</span>
         </div>
 
         <div class="layout-topbar-actions">
@@ -47,17 +54,35 @@ import { ButtonModule } from 'primeng/button';
             <button class="layout-topbar-menu-button layout-topbar-action" pStyleClass="@next" enterFromClass="hidden" enterActiveClass="animate-scalein" leaveToClass="hidden" leaveActiveClass="animate-fadeout" [hideOnOutsideClick]="true">
                 <i class="pi pi-ellipsis-v"></i>
             </button>
-            <p-button label="Logout" (click)="logOut()" severity="danger" />
+            <p-button label="Logout" (click)="logOut()" severity="danger" [outlined]="true" size="small" icon="fa-solid fa-arrow-right-from-bracket" />
         </div>
     </div>`
 })
-export class AppTopbar {
+export class AppTopbar implements OnInit {
     items!: MenuItem[];
+    tenantName = '';
+    tenantCode = '';
+    orgType = '';
 
     constructor(
         public layoutService: LayoutService,
         private authService: AuthService
     ) {}
+
+    ngOnInit() {
+        this.tenantName = this.authService.getTenantName();
+        this.tenantCode = this.authService.getTenantCode();
+        this.orgType = this.authService.getOrganizationType();
+    }
+
+    getTenantIcon(): string {
+        switch (this.orgType) {
+            case 'CommercialMall': return 'fa-solid fa-building-shield text-emerald-600 dark:text-emerald-400';
+            case 'ResidentialEstate': return 'fa-solid fa-tree-city text-cyan-600 dark:text-cyan-400';
+            case 'Municipality': return 'fa-solid fa-landmark-flag text-amber-600 dark:text-amber-400';
+            default: return 'fa-solid fa-building text-emerald-600';
+        }
+    }
 
     toggleDarkMode() {
         this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));

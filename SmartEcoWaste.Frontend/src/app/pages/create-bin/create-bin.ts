@@ -1,5 +1,5 @@
 import { BinService } from '@/core/services/bin.service';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FluidModule } from 'primeng/fluid';
 import { InputTextModule } from 'primeng/inputtext';
@@ -98,7 +98,7 @@ export class CreateBin {
     constructor(
         private binService: BinService,
         private messageService: MessageService,
-        private confirmationService: ConfirmationService
+        private confirmationService: ConfirmationService, private cdr: ChangeDetectorRef
     ) {}
 
     ngAfterViewInit(): void {
@@ -109,7 +109,7 @@ export class CreateBin {
         }).addTo(this.map);
 
         this.setUserLocation();
-        this.loadBins();
+        setTimeout(() => { this.loadBins(); });
 
         this.map.on('click', (e: L.LeafletMouseEvent) => {
             const lat = e.latlng.lat;

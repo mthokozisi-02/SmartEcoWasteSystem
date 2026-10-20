@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
@@ -16,33 +16,62 @@ import { AuthService } from '@/core/services/auth.service';
         </ng-container>
     </ul> `
 })
-export class AppMenu {
+export class AppMenu implements OnInit {
     model: MenuItem[] = [];
-
-    filteredMenu: MenuItem[] = [];
 
     constructor(private authService: AuthService) {}
 
     ngOnInit() {
-        this.model = [
+        this.buildMenu();
+    }
+
+    buildMenu() {
+        const userRole = this.authService.getUserRole();
+        const orgType = this.authService.getOrganizationType();
+
+        let propertiesLabel = 'Properties & Zones';
+        let tasksLabel = 'Collection Tasks';
+        let reportsLabel = 'Citizen Reports';
+
+        if (orgType === 'CommercialMall') {
+            propertiesLabel = 'Mall Zones & Docks';
+            tasksLabel = 'Contractor Tasks & SLA';
+            reportsLabel = 'Store & Tenant Notices';
+        } else if (orgType === 'ResidentialEstate') {
+            propertiesLabel = 'Estate Blocks & Chutes';
+            tasksLabel = 'Cleaning Staff Tasks';
+            reportsLabel = 'Resident Overflow Reports';
+        } else if (orgType === 'Municipality') {
+            propertiesLabel = 'Wards & Civic Depots';
+            tasksLabel = 'Fleet Route Dispatch';
+            reportsLabel = 'Citizen Grievances';
+        }
+
+        const rawMenu: MenuItem[] = [
             {
                 label: 'Home',
                 items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }]
             },
             {
-                label: 'Pages',
+                label: 'Operations & Facilities',
                 items: [
                     {
-                        label: 'Profile',
-                        icon: 'pi pi-fw pi-user',
-                        routerLink: ['/pages/profile']
+                        label: propertiesLabel,
+                        icon: 'pi pi-fw pi-building',
+                        routerLink: ['/pages/manage-properties'],
+                        role: 'Admin'
                     },
                     {
-                        label: 'Bins',
+                        label: tasksLabel,
+                        icon: 'pi pi-fw pi-check-square',
+                        routerLink: ['/pages/manage-tasks']
+                    },
+                    {
+                        label: 'Smart Bins',
                         icon: 'pi pi-fw pi-trash',
                         items: [
                             {
-                                label: 'Create Bin',
+                                label: 'Register Bin',
                                 icon: 'pi pi-fw pi-plus',
                                 routerLink: ['/pages/create-bin'],
                                 role: 'Admin'
@@ -56,23 +85,33 @@ export class AppMenu {
                         ]
                     },
                     {
-                        label: 'Reports',
+                        label: reportsLabel,
                         icon: 'pi pi-fw pi-list-check',
                         routerLink: ['/pages/manage-reports'],
                         role: 'Admin'
+                    }
+                ]
+            },
+            {
+                label: 'Organization Management',
+                items: [
+                    {
+                        label: 'Profile',
+                        icon: 'pi pi-fw pi-user',
+                        routerLink: ['/pages/profile']
                     },
                     {
-                        label: 'Users',
+                        label: 'Staff & Roles',
                         icon: 'pi pi-fw pi-users',
                         items: [
                             {
-                                label: 'Create User',
+                                label: 'Add User',
                                 icon: 'pi pi-fw pi-user-plus',
                                 routerLink: ['/pages/create-user'],
                                 role: 'Admin'
                             },
                             {
-                                label: 'Manage Users',
+                                label: 'Manage Staff',
                                 icon: 'pi pi-fw pi-user-edit',
                                 routerLink: ['/pages/manage-users'],
                                 role: 'Admin'
@@ -80,7 +119,7 @@ export class AppMenu {
                         ]
                     },
                     {
-                        label: 'Eco-Education',
+                        label: 'Public Portal',
                         icon: 'pi pi-fw pi-globe',
                         routerLink: ['/landing']
                     }
@@ -88,35 +127,25 @@ export class AppMenu {
             }
         ];
 
-        this.buildMenu();
-    }
-
-    buildMenu() {
-        const userRole = this.authService.getUserRole();
-
-        this.model = this.filterMenuByRole(this.model, userRole);
+        this.model = this.filterMenuByRole(rawMenu, userRole);
     }
 
     filterMenuByRole(items: any[], userRole: string | null): any[] {
         return items
             .map((item) => {
-                // If item has role and doesn't match → remove
-                if (item.role && item.role !== userRole) {
-                    return null;
-                }
-
-                // If item has children → filter them recursively
                 if (item.items) {
-                    item.items = this.filterMenuByRole(item.items, userRole);
-
-                    // If after filtering there are no children → remove parent
-                    if (item.items.length === 0) {
-                        return null;
-                    }
+                    const filteredSubItems = this.filterMenuByRole(item.items, userRole);
+                    return { ...item, items: filteredSubItems };
                 }
-
                 return item;
             })
-            .filter((item) => item !== null);
+            .filter((item) => {
+                if (item.role) {
+                    const normalizedUserRole = (userRole || '').toLowerCase();
+                    const normalizedRequiredRole = item.role.toLowerCase();
+                    return normalizedUserRole.includes(normalizedRequiredRole) || normalizedUserRole.includes('superadmin');
+                }
+                return true;
+            });
     }
 }

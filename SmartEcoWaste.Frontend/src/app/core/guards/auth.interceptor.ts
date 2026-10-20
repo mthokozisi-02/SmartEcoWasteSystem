@@ -14,16 +14,20 @@ export class AuthInterceptor implements HttpInterceptor {
 
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         const token = this.authService.getAccessToken();
+        const tenantId = this.authService.getTenantId();
 
-        let authReq = req;
+        const headers: { [name: string]: string } = {};
 
         if (token) {
-            authReq = req.clone({
-                setHeaders: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            headers['Authorization'] = `Bearer ${token}`;
         }
+        if (tenantId) {
+            headers['X-Tenant-Id'] = tenantId.toString();
+        }
+
+        const authReq = req.clone({
+            setHeaders: headers
+        });
 
         return next.handle(authReq).pipe(
             catchError((error: HttpErrorResponse) => {
@@ -31,11 +35,14 @@ export class AuthInterceptor implements HttpInterceptor {
                     return this.authService.refreshToken().pipe(
                         switchMap(() => {
                             const newToken = this.authService.getAccessToken();
+                            const newTenantId = this.authService.getTenantId();
+
+                            const retryHeaders: { [name: string]: string } = {};
+                            if (newToken) retryHeaders['Authorization'] = `Bearer ${newToken}`;
+                            if (newTenantId) retryHeaders['X-Tenant-Id'] = newTenantId.toString();
 
                             const retryReq = req.clone({
-                                setHeaders: {
-                                    Authorization: `Bearer ${newToken}`
-                                }
+                                setHeaders: retryHeaders
                             });
 
                             return next.handle(retryReq);

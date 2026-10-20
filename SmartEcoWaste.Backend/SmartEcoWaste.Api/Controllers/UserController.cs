@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartEcoWaste.Data.Dtos;
 using SmartEcoWaste.Services.Interfaces;

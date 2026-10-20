@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SmartEcoWaste.Infrastructure.DbContexts;
 using SmartEcoWaste.Infrastructure.Middleware;
+using SmartEcoWaste.Infrastructure.MultiTenancy;
 using SmartEcoWaste.Infrastructure.Seeding;
 using SmartEcoWaste.Services.Interfaces;
 using SmartEcoWaste.Services.Services;
@@ -13,9 +14,14 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Multi-Tenancy Registration
+builder.Services.AddScoped<ITenantContextAccessor, TenantContextAccessor>();
+
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBinService, BinService>();
 builder.Services.AddScoped<IReportBin,  ReportBinService>();
+builder.Services.AddScoped<IPropertyService, PropertyService>();
+builder.Services.AddScoped<ICollectionTaskService, CollectionTaskService>();
 
 builder.Services.AddAutoMapper(cfg =>
 {
@@ -30,9 +36,7 @@ builder.Services.AddControllers()
     });
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-
-builder.Services.AddDbContext<SmartEcoWasteDbContext>(options =>
+builder.Services.AddDbContext<SmartEcoWasteDbContext>((sp, options) =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -71,10 +75,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-}
-
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors(x => x
@@ -83,18 +83,13 @@ app.UseCors(x => x
     .AllowAnyHeader()
     .AllowCredentials());
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-}
 app.UseSwagger();
 app.UseSwaggerUI();
 
-
 app.UseAuthentication();
 app.UseMiddleware<AuthMiddleware>();
+app.UseMiddleware<TenantMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-

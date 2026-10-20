@@ -33,6 +33,16 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.Property<string>("Area")
                         .HasColumnType("longtext");
 
+                    b.Property<string>("BinTag")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<double>("CapacityLiters")
+                        .HasColumnType("double");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -52,12 +62,248 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("WasteZoneId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("WasteZoneId");
+
+                    b.ToTable("Bins");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.BinInspectionLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnomalyReason")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("ApprovedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BinId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CollectionTaskId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Condition")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("FillLevelPercentage")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("HasAnomaly")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("InspectorUserId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<double?>("MeasuredWeightKg")
+                        .HasColumnType("double");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PhotoProofUrl")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("QrCodeScanned")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Bins");
+                    b.HasIndex("ApprovedByUserId");
+
+                    b.HasIndex("BinId");
+
+                    b.HasIndex("CollectionTaskId");
+
+                    b.HasIndex("InspectorUserId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("BinInspectionLogs");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.Building", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("NumberOfFloors")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PropertyId");
+
+                    b.ToTable("Buildings");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.CollectionTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AssignedUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BinId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ContractorName")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Instructions")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("ScheduledAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedUserId");
+
+                    b.HasIndex("BinId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("CollectionTasks");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.Property", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Properties");
                 });
 
             modelBuilder.Entity("SmartEcoWaste.Data.Entities.Redemption", b =>
@@ -111,6 +357,9 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -126,6 +375,8 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BinId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserId");
 
@@ -158,6 +409,45 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.Tenant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("OrganizationType")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Tenants");
                 });
 
             modelBuilder.Entity("SmartEcoWaste.Data.Entities.User", b =>
@@ -198,6 +488,9 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.Property<int>("RoleId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -207,6 +500,8 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("RoleId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("Users");
                 });
@@ -241,11 +536,171 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.ToTable("UsersPoints");
                 });
 
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.WasteZone", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("BuildingId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("FloorLevel")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildingId");
+
+                    b.HasIndex("PropertyId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("WasteZones");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.Bin", b =>
+                {
+                    b.HasOne("SmartEcoWaste.Data.Entities.Tenant", "Tenant")
+                        .WithMany("Bins")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.WasteZone", "WasteZone")
+                        .WithMany("Bins")
+                        .HasForeignKey("WasteZoneId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("WasteZone");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.BinInspectionLog", b =>
+                {
+                    b.HasOne("SmartEcoWaste.Data.Entities.User", "ApprovedByUser")
+                        .WithMany()
+                        .HasForeignKey("ApprovedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.Bin", "Bin")
+                        .WithMany("InspectionLogs")
+                        .HasForeignKey("BinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.CollectionTask", "CollectionTask")
+                        .WithMany("InspectionLogs")
+                        .HasForeignKey("CollectionTaskId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.User", "InspectorUser")
+                        .WithMany()
+                        .HasForeignKey("InspectorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.Tenant", "Tenant")
+                        .WithMany("InspectionLogs")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ApprovedByUser");
+
+                    b.Navigation("Bin");
+
+                    b.Navigation("CollectionTask");
+
+                    b.Navigation("InspectorUser");
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.Building", b =>
+                {
+                    b.HasOne("SmartEcoWaste.Data.Entities.Property", "Property")
+                        .WithMany("Buildings")
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Property");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.CollectionTask", b =>
+                {
+                    b.HasOne("SmartEcoWaste.Data.Entities.User", "AssignedUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.Bin", "Bin")
+                        .WithMany("Tasks")
+                        .HasForeignKey("BinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.Tenant", "Tenant")
+                        .WithMany("Tasks")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AssignedUser");
+
+                    b.Navigation("Bin");
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.Property", b =>
+                {
+                    b.HasOne("SmartEcoWaste.Data.Entities.Tenant", "Tenant")
+                        .WithMany("Properties")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("SmartEcoWaste.Data.Entities.Report", b =>
                 {
                     b.HasOne("SmartEcoWaste.Data.Entities.Bin", "Bin")
                         .WithMany()
                         .HasForeignKey("BinId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.Tenant", "Tenant")
+                        .WithMany("Reports")
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -262,6 +717,8 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
                     b.Navigation("Bin");
 
+                    b.Navigation("Tenant");
+
                     b.Navigation("User");
 
                     b.Navigation("VerifyByUser");
@@ -275,7 +732,15 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("SmartEcoWaste.Data.Entities.Tenant", "Tenant")
+                        .WithMany("Users")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Role");
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("SmartEcoWaste.Data.Entities.UserPoints", b =>
@@ -289,11 +754,83 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.WasteZone", b =>
+                {
+                    b.HasOne("SmartEcoWaste.Data.Entities.Building", "Building")
+                        .WithMany("WasteZones")
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.Property", "Property")
+                        .WithMany("WasteZones")
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.Tenant", "Tenant")
+                        .WithMany("WasteZones")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Building");
+
+                    b.Navigation("Property");
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.Bin", b =>
+                {
+                    b.Navigation("InspectionLogs");
+
+                    b.Navigation("Tasks");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.Building", b =>
+                {
+                    b.Navigation("WasteZones");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.CollectionTask", b =>
+                {
+                    b.Navigation("InspectionLogs");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.Property", b =>
+                {
+                    b.Navigation("Buildings");
+
+                    b.Navigation("WasteZones");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.Tenant", b =>
+                {
+                    b.Navigation("Bins");
+
+                    b.Navigation("InspectionLogs");
+
+                    b.Navigation("Properties");
+
+                    b.Navigation("Reports");
+
+                    b.Navigation("Tasks");
+
+                    b.Navigation("Users");
+
+                    b.Navigation("WasteZones");
+                });
+
             modelBuilder.Entity("SmartEcoWaste.Data.Entities.User", b =>
                 {
                     b.Navigation("Points");
 
                     b.Navigation("UserReports");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.WasteZone", b =>
+                {
+                    b.Navigation("Bins");
                 });
 #pragma warning restore 612, 618
         }
