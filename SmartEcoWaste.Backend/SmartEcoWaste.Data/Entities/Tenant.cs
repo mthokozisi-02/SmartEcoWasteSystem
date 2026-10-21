@@ -6,7 +6,7 @@ namespace SmartEcoWaste.Data.Entities
     public class Tenant : BaseEntity
     {
         public string Name { get; set; } = null!;
-        public string Code { get; set; } = null!; // Unique slug e.g. "mall-of-africa", "city-of-joburg"
+        public string Code { get; set; } = null!; // Unique slug e.g. "MALL-001", "RES-001"
         public string? OrganizationType { get; set; } // "ResidentialEstate", "CommercialMall", "Municipality"
         public bool IsActive { get; set; } = true;
 
@@ -17,5 +17,7 @@ namespace SmartEcoWaste.Data.Entities
         public ICollection<Report> Reports { get; set; } = new List<Report>();
         public ICollection<CollectionTask> Tasks { get; set; } = new List<CollectionTask>();
         public ICollection<BinInspectionLog> InspectionLogs { get; set; } = new List<BinInspectionLog>();
+        public ICollection<UserPoints> UserPoints { get; set; } = new List<UserPoints>();
+        public ICollection<Redemption> Redemptions { get; set; } = new List<Redemption>();
     }
 }

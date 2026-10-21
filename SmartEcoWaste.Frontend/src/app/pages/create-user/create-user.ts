@@ -92,7 +92,6 @@ export class CreateUser {
     ) {}
 
     ngOnInit() {
-        console.log(localStorage);
 
         this.loadUsers();
     }
@@ -126,7 +125,7 @@ export class CreateUser {
             .getAll()
             .pipe(
                 tap((res) => {
-                    (this.users.set(res.data), console.log('users:', res));
+                    this.users.set(res.data);
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -139,7 +138,6 @@ export class CreateUser {
     }
 
     deleteUser(id: number) {
-        console.log(id);
         this.confirmationService.confirm({
             message: `Are you sure you want to delete this user?`,
             header: 'Confirm',
@@ -178,3 +176,5 @@ export class CreateUser {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
     }
 }
+
+

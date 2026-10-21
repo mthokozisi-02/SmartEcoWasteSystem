@@ -131,7 +131,6 @@ export class StatsWidget {
                         this.points += user.userPoints;
                     });
                     this.userRoles = this.users().filter((user) => user.roleId == 2).length;
-                    console.log('Users loaded:', res.data);
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -176,3 +175,4 @@ export class StatsWidget {
             .subscribe();
     }
 }
+

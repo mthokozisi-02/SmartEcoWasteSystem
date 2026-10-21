@@ -8,8 +8,11 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { SliderModule } from 'primeng/slider';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { CollectionTaskService } from '@/core/services/collection-task.service';
+import { BinService } from '@/core/services/bin.service';
+import { UserService } from '@/core/services/user.service';
 import {
     CreateCollectionTaskDto,
     ResponseCollectionTaskDto,
@@ -29,7 +32,8 @@ import {
         InputTextModule,
         TagModule,
         ToastModule,
-        SliderModule
+        SliderModule,
+        SelectModule
     ],
     providers: [MessageService],
     template: `
@@ -118,19 +122,39 @@ import {
         </div>
 
         <!-- Dialog: New Task -->
-        <p-dialog [(visible)]="displayNewTaskDialog" [modal]="true" header="Create Collection Task" [style]="{ width: '450px' }">
+        <p-dialog [(visible)]="displayNewTaskDialog" [modal]="true" header="Create Collection Task" [style]="{ width: '500px' }">
             <div class="flex flex-col gap-4 py-2">
                 <div>
                     <label class="block text-sm font-semibold mb-1">Task Title</label>
                     <input pInputText type="text" class="w-full" [(ngModel)]="newTask.title" placeholder="E.g., Morning Food Court Waste Pickup" />
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold mb-1">Bin ID</label>
-                    <input pInputText type="number" class="w-full" [(ngModel)]="newTask.binId" placeholder="Bin ID number" />
+                    <label class="block text-sm font-semibold mb-1">Select Bin</label>
+                    <p-select
+                        [options]="binOptions"
+                        [(ngModel)]="newTask.binId"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Choose a bin..."
+                        [filter]="true"
+                        filterPlaceholder="Search bins..."
+                        class="w-full"
+                        styleClass="w-full">
+                    </p-select>
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold mb-1">Contractor / Team Name</label>
-                    <input pInputText type="text" class="w-full" [(ngModel)]="newTask.contractorName" placeholder="E.g., EcoClean Services Ltd" />
+                    <label class="block text-sm font-semibold mb-1">Assign Contractor / Staff</label>
+                    <p-select
+                        [options]="contractorOptions"
+                        [(ngModel)]="newTask.contractorName"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Choose a contractor or team..."
+                        [filter]="true"
+                        filterPlaceholder="Search staff..."
+                        class="w-full"
+                        styleClass="w-full">
+                    </p-select>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1">Instructions</label>
@@ -145,10 +169,28 @@ import {
 
         <!-- Dialog: Field Inspection & QR Scan -->
         <p-dialog [(visible)]="displayInspectionDialog" [modal]="true" header="Field Inspection & Collection Log" [style]="{ width: '500px' }">
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                <div class="flex items-start gap-2">
+                    <i class="pi pi-info-circle text-blue-500 mt-0.5"></i>
+                    <p class="text-sm text-blue-700 dark:text-blue-300 m-0">
+                        Use this form when doing a physical bin inspection. Scan the bin's QR code (or enter its ID), then record the fill level, weight, and condition. Any anomalies are flagged for supervisor review.
+                    </p>
+                </div>
+            </div>
             <div class="flex flex-col gap-4 py-2">
                 <div>
-                    <label class="block text-sm font-semibold mb-1">Bin ID (from QR Scan)</label>
-                    <input pInputText type="number" class="w-full" [(ngModel)]="newInspection.binId" placeholder="Scan or enter Bin ID" />
+                    <label class="block text-sm font-semibold mb-1">Bin (from QR Scan)</label>
+                    <p-select
+                        [options]="binOptions"
+                        [(ngModel)]="newInspection.binId"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Scan or select bin..."
+                        [filter]="true"
+                        filterPlaceholder="Search bins..."
+                        class="w-full"
+                        styleClass="w-full">
+                    </p-select>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1">Fill Level: {{ newInspection.fillLevelPercentage }}%</label>
@@ -188,6 +230,8 @@ import {
 })
 export class ManageTasks implements OnInit {
     private taskService = inject(CollectionTaskService);
+    private binService = inject(BinService);
+    private userService = inject(UserService);
     private messageService = inject(MessageService);
 
     tasks: ResponseCollectionTaskDto[] = [];
@@ -196,6 +240,10 @@ export class ManageTasks implements OnInit {
 
     displayNewTaskDialog = false;
     displayInspectionDialog = false;
+
+    // Dropdown options
+    binOptions: { label: string; value: number }[] = [];
+    contractorOptions: { label: string; value: string }[] = [];
 
     newTask: CreateCollectionTaskDto = {
         binId: 0,
@@ -215,6 +263,44 @@ export class ManageTasks implements OnInit {
     ngOnInit(): void {
         this.loadTasks();
         this.loadInspections();
+        this.loadBinOptions();
+        this.loadContractorOptions();
+    }
+
+    loadBinOptions(): void {
+        this.binService.getAll().subscribe({
+            next: (res) => {
+                const bins = res.data || [];
+                this.binOptions = bins.map((b: any) => ({
+                    label: `Bin #${b.id} — ${b.area ? b.area.split(',').slice(0, 2).join(',').trim() : 'No location'}`,
+                    value: b.id
+                }));
+            },
+            error: () => {
+                this.binOptions = [];
+            }
+        });
+    }
+
+    loadContractorOptions(): void {
+        this.userService.getAll().subscribe({
+            next: (res) => {
+                const users = res.data || res || [];
+                this.contractorOptions = users.map((u: any) => ({
+                    label: `${u.fullName || u.name || u.email} (${u.roleName || u.role || 'Staff'})`,
+                    value: u.fullName || u.name || u.email
+                }));
+            },
+            error: () => {
+                // Fallback with common contractor names
+                this.contractorOptions = [
+                    { label: 'EcoClean Services Ltd', value: 'EcoClean Services Ltd' },
+                    { label: 'GreenWaste Solutions', value: 'GreenWaste Solutions' },
+                    { label: 'CleanSweep Contractors', value: 'CleanSweep Contractors' },
+                    { label: 'Internal Maintenance Team', value: 'Internal Maintenance Team' }
+                ];
+            }
+        });
     }
 
     loadTasks(): void {
@@ -238,7 +324,7 @@ export class ManageTasks implements OnInit {
 
     openNewTaskDialog(): void {
         this.newTask = {
-            binId: 1,
+            binId: 0,
             title: '',
             scheduledAt: new Date().toISOString(),
             dueDate: new Date(Date.now() + 86400000).toISOString()
@@ -248,7 +334,7 @@ export class ManageTasks implements OnInit {
 
     saveTask(): void {
         if (!this.newTask.title || !this.newTask.binId) {
-            this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Title and Bin ID are required' });
+            this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Title and Bin are required' });
             return;
         }
         this.taskService.createTask(this.newTask).subscribe({
@@ -280,7 +366,7 @@ export class ManageTasks implements OnInit {
 
     openInspectionDialog(): void {
         this.newInspection = {
-            binId: 1,
+            binId: 0,
             qrCodeScanned: true,
             fillLevelPercentage: 50,
             condition: 0,
@@ -291,7 +377,7 @@ export class ManageTasks implements OnInit {
 
     saveInspection(): void {
         if (!this.newInspection.binId) {
-            this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Bin ID is required' });
+            this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Please select a bin' });
             return;
         }
         this.newInspection.hasAnomaly = Number(this.newInspection.condition) !== 0;

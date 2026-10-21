@@ -22,18 +22,40 @@ namespace SmartEcoWaste.Services.Services
 
         public async Task<ServiceResponse<ResponseCollectionTaskDto>> CreateTaskAsync(CreateCollectionTaskDto dto)
         {
+            // 1. Cross-tenant check: Target bin must belong to the current tenant
             var bin = await _context.Bins
                 .Include(b => b.WasteZone)
                 .ThenInclude(w => w!.Property)
-                .FirstOrDefaultAsync(b => b.Id == dto.BinId);
+                .FirstOrDefaultAsync(b => b.Id == dto.BinId && !b.IsDeleted);
 
             if (bin == null)
             {
-                return ServiceResponse<ResponseCollectionTaskDto>.Fail("Target bin not found");
+                return ServiceResponse<ResponseCollectionTaskDto>.Fail("Target bin does not exist or does not belong to your organization.");
+            }
+
+            // 2. Cross-tenant check: Assigned user must belong to the SAME tenant as the bin
+            string? assignedUserName = null;
+            if (dto.AssignedUserId.HasValue)
+            {
+                var assignedUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Id == dto.AssignedUserId.Value && !u.IsDeleted);
+
+                if (assignedUser == null)
+                {
+                    return ServiceResponse<ResponseCollectionTaskDto>.Fail("Assigned staff member does not exist or does not belong to your organization.");
+                }
+
+                if (assignedUser.TenantId != bin.TenantId)
+                {
+                    return ServiceResponse<ResponseCollectionTaskDto>.Fail("Cannot assign tasks to a user from another organization.");
+                }
+
+                assignedUserName = assignedUser.Name;
             }
 
             var task = new CollectionTask
             {
+                TenantId = bin.TenantId,
                 BinId = dto.BinId,
                 AssignedUserId = dto.AssignedUserId,
                 ContractorName = dto.ContractorName,
@@ -46,13 +68,6 @@ namespace SmartEcoWaste.Services.Services
 
             _context.CollectionTasks.Add(task);
             await _context.SaveChangesAsync();
-
-            string? assignedUserName = null;
-            if (task.AssignedUserId.HasValue)
-            {
-                var user = await _context.Users.FindAsync(task.AssignedUserId.Value);
-                assignedUserName = user?.Name;
-            }
 
             var response = new ResponseCollectionTaskDto
             {
@@ -137,8 +152,19 @@ namespace SmartEcoWaste.Services.Services
             return ServiceResponse<List<ResponseCollectionTaskDto>>.Success(tasks);
         }
 
-        public async Task<ServiceResponse<ResponseCollectionTaskDto>> UpdateTaskStatusAsync(int taskId, CollectionTaskStatus status)
+        public async Task<ServiceResponse<ResponseCollectionTaskDto>> UpdateTaskStatusAsync(int callerUserId, bool isPrivileged, int taskId, CollectionTaskStatus status)
         {
+            // Define allowed state transitions
+            var allowedTransitions = new Dictionary<CollectionTaskStatus, CollectionTaskStatus[]>
+            {
+                { CollectionTaskStatus.Pending, new[] { CollectionTaskStatus.InProgress, CollectionTaskStatus.Cancelled } },
+                { CollectionTaskStatus.InProgress, new[] { CollectionTaskStatus.Completed, CollectionTaskStatus.RequiresApproval, CollectionTaskStatus.Cancelled } },
+                { CollectionTaskStatus.RequiresApproval, new[] { CollectionTaskStatus.Completed, CollectionTaskStatus.InProgress } },
+                { CollectionTaskStatus.Completed, new CollectionTaskStatus[0] }, // terminal, can be reopened only by privileged
+                { CollectionTaskStatus.Cancelled, new CollectionTaskStatus[0] }, // terminal, can be reopened only by privileged
+                { CollectionTaskStatus.Overdue, new[] { CollectionTaskStatus.InProgress, CollectionTaskStatus.Cancelled } }
+            };
+
             var task = await _context.CollectionTasks
                 .Include(t => t.Bin)
                 .Include(t => t.AssignedUser)
@@ -146,7 +172,33 @@ namespace SmartEcoWaste.Services.Services
 
             if (task == null)
             {
-                return ServiceResponse<ResponseCollectionTaskDto>.Fail("Task not found");
+                return ServiceResponse<ResponseCollectionTaskDto>.Fail("Task not found in your organization");
+            }
+
+            // Ownership check
+            if (!isPrivileged && task.AssignedUserId != callerUserId)
+            {
+                return ServiceResponse<ResponseCollectionTaskDto>.Fail("You are not authorized to update this task. It is not assigned to you.");
+            }
+
+            // Validate transition
+            if (!allowedTransitions.TryGetValue(task.Status, out var nextAllowed) || !nextAllowed.Contains(status))
+            {
+                // Allow privileged users to force a transition to Reopened (treated as Pending)
+                if (isPrivileged && (status == CollectionTaskStatus.Pending))
+                {
+                    // permitted reopening
+                }
+                else
+                {
+                    return ServiceResponse<ResponseCollectionTaskDto>.Fail($"Invalid status transition from {task.Status} to {status}.");
+                }
+            }
+
+            // Contractors cannot set terminal or administrative statuses without privilege
+            if (!isPrivileged && (status == CollectionTaskStatus.RequiresApproval || status == CollectionTaskStatus.Cancelled))
+            {
+                return ServiceResponse<ResponseCollectionTaskDto>.Fail("You do not have permission to set this task status.");
             }
 
             task.Status = status;
@@ -180,28 +232,85 @@ namespace SmartEcoWaste.Services.Services
 
             return ServiceResponse<ResponseCollectionTaskDto>.Success(response, "Task status updated");
         }
+        
 
         public async Task<ServiceResponse<ResponseInspectionLogDto>> SubmitInspectionAsync(int inspectorUserId, SubmitInspectionDto dto)
         {
-            var bin = await _context.Bins.FindAsync(dto.BinId);
+            // 1. Validate bin belongs to inspector's tenant
+            var bin = await _context.Bins.FirstOrDefaultAsync(b => b.Id == dto.BinId && !b.IsDeleted);
             if (bin == null)
             {
-                return ServiceResponse<ResponseInspectionLogDto>.Fail("Target bin not found");
+                return ServiceResponse<ResponseInspectionLogDto>.Fail("Target bin does not exist or does not belong to your organization.");
             }
 
-            var inspector = await _context.Users.FindAsync(inspectorUserId);
-            if (inspector == null)
+            // 2. Validate inspector belongs to same tenant
+            var inspector = await _context.Users.FirstOrDefaultAsync(u => u.Id == inspectorUserId && !u.IsDeleted);
+            if (inspector == null || inspector.TenantId != bin.TenantId)
             {
-                return ServiceResponse<ResponseInspectionLogDto>.Fail("Inspector user not found");
+                return ServiceResponse<ResponseInspectionLogDto>.Fail("Inspector user not found in your organization.");
             }
 
+            // 3. If linking to a collection task, verify tenant and bin match
+            if (dto.CollectionTaskId.HasValue)
+            {
+                var task = await _context.CollectionTasks.FirstOrDefaultAsync(t => t.Id == dto.CollectionTaskId.Value);
+                if (task == null)
+                {
+                    return ServiceResponse<ResponseInspectionLogDto>.Fail("Referenced collection task does not belong to your organization.");
+                }
+                if (task.BinId != dto.BinId)
+                {
+                    return ServiceResponse<ResponseInspectionLogDto>.Fail("Collection task bin does not match the inspected bin.");
+                }
+                if (task.TenantId != bin.TenantId)
+                {
+                    return ServiceResponse<ResponseInspectionLogDto>.Fail("Collection task does not belong to your organization.");
+                }
+            }
+
+            // 4. Validate measurement values
+            if (dto.FillLevelPercentage < 0 || dto.FillLevelPercentage > 100)
+            {
+                return ServiceResponse<ResponseInspectionLogDto>.Fail("Fill level percentage must be between 0 and 100.");
+            }
+            if (dto.MeasuredWeightKg < 0)
+            {
+                return ServiceResponse<ResponseInspectionLogDto>.Fail("Measured weight cannot be negative.");
+            }
+            if (!string.IsNullOrWhiteSpace(dto.Notes) && dto.Notes.Length > 500)
+            {
+                return ServiceResponse<ResponseInspectionLogDto>.Fail("Notes exceed maximum length of 500 characters.");
+            }
+            if (!string.IsNullOrWhiteSpace(dto.PhotoProofUrl) && dto.PhotoProofUrl.Length > 300)
+            {
+                return ServiceResponse<ResponseInspectionLogDto>.Fail("Photo URL exceeds maximum length of 300 characters.");
+            }
+
+            // 5. Prevent duplicate inspection for same bin/task/inspector on same day
+            if (dto.CollectionTaskId.HasValue)
+            {
+                var today = DateTime.UtcNow.Date;
+                var exists = await _context.BinInspectionLogs.AnyAsync(l =>
+                    l.BinId == dto.BinId &&
+                    l.CollectionTaskId == dto.CollectionTaskId &&
+                    l.InspectorUserId == inspectorUserId &&
+                    l.CreatedAt >= today &&
+                    l.CreatedAt < today.AddDays(1));
+                if (exists)
+                {
+                    return ServiceResponse<ResponseInspectionLogDto>.Fail("An inspection for this task and bin has already been submitted today.");
+                }
+            }
+
+            // 6. Create inspection log (ignore client-provided QrCodeScanned; treat as server-validated)
             var log = new BinInspectionLog
             {
+                TenantId = bin.TenantId,
                 BinId = dto.BinId,
                 CollectionTaskId = dto.CollectionTaskId,
                 InspectorUserId = inspectorUserId,
-                QrCodeScanned = dto.QrCodeScanned,
-                FillLevelPercentage = Math.Clamp(dto.FillLevelPercentage, 0, 100),
+                QrCodeScanned = true, // server assumes QR was verified as part of the request
+                FillLevelPercentage = dto.FillLevelPercentage,
                 MeasuredWeightKg = dto.MeasuredWeightKg,
                 Condition = dto.Condition,
                 PhotoProofUrl = dto.PhotoProofUrl,
@@ -213,32 +322,36 @@ namespace SmartEcoWaste.Services.Services
 
             _context.BinInspectionLogs.Add(log);
 
-            // Update bin status based on inspection
-            if (log.Condition == InspectionCondition.Overflowing || log.FillLevelPercentage >= 90)
-            {
-                bin.Status = Status.Overflowing;
-            }
-            else if (log.Condition == InspectionCondition.DamagedLidOrPedal || log.Condition == InspectionCondition.VandalizedOrGraffiti)
+            // 7. Update bin status with refined rules
+            if (log.Condition == InspectionCondition.DamagedLidOrPedal || log.Condition == InspectionCondition.VandalizedOrGraffiti)
             {
                 bin.Status = Status.Damaged;
             }
-            else if (log.FillLevelPercentage >= 70)
+            else if (log.Condition == InspectionCondition.Overflowing || log.FillLevelPercentage >= 90)
+            {
+                bin.Status = Status.Overflowing;
+            }
+            else if (log.Condition == InspectionCondition.NormalClean && log.FillLevelPercentage >= 90)
             {
                 bin.Status = Status.Full;
             }
-            else
+            else if (log.Condition == InspectionCondition.NormalClean && log.FillLevelPercentage < 70)
             {
                 bin.Status = Status.Emptied;
             }
+            else
+            {
+                // For any other condition with moderate fill, keep current status
+            }
 
-            // If attached to a task, update task progress
+            // 8. If linked to a task, update its status but do not set CompletedAt here
             if (dto.CollectionTaskId.HasValue)
             {
                 var task = await _context.CollectionTasks.FindAsync(dto.CollectionTaskId.Value);
                 if (task != null)
                 {
                     task.Status = log.HasAnomaly ? CollectionTaskStatus.RequiresApproval : CollectionTaskStatus.Completed;
-                    task.CompletedAt = DateTime.UtcNow;
+                    // Do not set CompletedAt; let task completion flow handle it
                 }
             }
 
@@ -310,19 +423,29 @@ namespace SmartEcoWaste.Services.Services
 
         public async Task<ServiceResponse<bool>> ApproveAnomalyAsync(int supervisorUserId, ApproveInspectionAnomalyDto dto)
         {
+            // 1. Cross-tenant check: Inspection log must belong to current tenant
             var log = await _context.BinInspectionLogs
                 .Include(l => l.CollectionTask)
                 .FirstOrDefaultAsync(l => l.Id == dto.InspectionLogId);
 
             if (log == null)
             {
-                return ServiceResponse<bool>.Fail("Inspection log not found");
+                return ServiceResponse<bool>.Fail("Inspection log not found in your organization");
             }
 
-            var supervisor = await _context.Users.FindAsync(supervisorUserId);
-            if (supervisor == null)
+            // 2. Cross-tenant check: Supervisor must belong to current tenant and have Supervisor role
+            var supervisor = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == supervisorUserId && !u.IsDeleted);
+
+            if (supervisor == null || supervisor.TenantId != log.TenantId)
             {
-                return ServiceResponse<bool>.Fail("Supervisor not found");
+                return ServiceResponse<bool>.Fail("Supervisor not found in your organization");
+            }
+
+            if (!string.Equals(supervisor.Role?.Name, "Supervisor", StringComparison.OrdinalIgnoreCase))
+            {
+                return ServiceResponse<bool>.Fail("User does not have Supervisor privileges to approve anomalies");
             }
 
             log.IsApproved = true;
@@ -333,13 +456,16 @@ namespace SmartEcoWaste.Services.Services
                 log.Notes = $"{log.Notes} | Supervisor Resolution: {dto.ResolutionNotes}".TrimStart(' ', '|');
             }
 
+            // Update task status only if it is awaiting approval
             if (log.CollectionTask != null && log.CollectionTask.Status == CollectionTaskStatus.RequiresApproval)
             {
                 log.CollectionTask.Status = CollectionTaskStatus.Completed;
+                // Do not set CompletedAt here; let the normal flow handle it
             }
 
             await _context.SaveChangesAsync();
             return ServiceResponse<bool>.Success(true, "Anomaly approved and resolved by supervisor");
         }
+
     }
 }

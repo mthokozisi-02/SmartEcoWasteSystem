@@ -4,5 +4,6 @@ namespace SmartEcoWaste.Infrastructure.MultiTenancy
     {
         int TenantId { get; }
         bool IsSuperAdmin { get; }
+        bool IsResolved { get; }
     }
 }

@@ -19,12 +19,10 @@ export class BinService {
     }
 
     createBin(bin: CreateBinDto): Observable<any> {
-        console.log(bin);
         return this.http.post<any>(`${apiUrl}/create-bin`, bin);
     }
 
     updateBin(bin: CreateBinDto): Observable<any> {
-        console.log(bin);
         return this.http.put<any>(`${apiUrl}/update-bin`, bin);
     }
 
@@ -36,8 +34,11 @@ export class BinService {
         return this.http.get<any>(`${apiUrl}/get-all-bins`);
     }
 
+    getPublicBin(id: number): Observable<any> {
+        return this.http.get<any>(`${apiUrl}/bin-public/${id}`);
+    }
+
     reportBin(bin: ReportBinDto): Observable<any> {
-        console.log(bin);
         return this.http.post<any>(`${apiUrl}/report-bin`, bin);
     }
 }

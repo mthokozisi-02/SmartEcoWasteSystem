@@ -146,7 +146,6 @@ export class RevenueStreamWidget {
                 tap((res) => {
                     this.userData = res.data;
                     this.initChart();
-                    console.log('Data loaded:', res);
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -157,3 +156,4 @@ export class RevenueStreamWidget {
             .subscribe();
     }
 }
+

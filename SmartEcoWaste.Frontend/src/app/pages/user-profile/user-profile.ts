@@ -74,7 +74,6 @@ export class UserProfile {
             .pipe(
                 tap((res) => {
                     this.user = res.data;
-                    console.log('user', this.user);
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -120,3 +119,4 @@ export class UserProfile {
             .subscribe();
     }
 }
+

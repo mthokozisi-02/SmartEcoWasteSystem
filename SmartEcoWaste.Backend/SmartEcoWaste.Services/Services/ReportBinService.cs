@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using SmartEcoWaste.Data.Dtos;
 using SmartEcoWaste.Data.Entities;
@@ -25,22 +25,22 @@ namespace SmartEcoWaste.Services.Services
 
             report.IsDeleted = true;
             await _smartEcoWasteDbContext.SaveChangesAsync();
-            return
-                $"{report.Id} report deleted successfully";
+            return $"{report.Id} report deleted successfully";
         }
 
         public async Task<ServiceResponse<GraphDataDto>> GetGraphDataAsync()
         {
             var topUsers = await _smartEcoWasteDbContext.Reports
-                .GroupBy(r => new { r.UserId, r.User.Name })
+                .Where(r => r.UserId != null && r.UserId > 0)
+                .GroupBy(r => new { r.UserId, r.User!.Name })
                 .Select(g => new
                 {
                     Username = g.Key.Name,
                     TotalReports = g.Count(),
-                    EmptiedCount = g.Count(r => r.Status == Data.Enums.Status.Emptied),
-                    FullCount = g.Count(r => r.Status == Data.Enums.Status.Full),
-                    OverflowingCount = g.Count(r => r.Status == Data.Enums.Status.Overflowing),
-                    DamagedCount = g.Count(r => r.Status == Data.Enums.Status.Damaged)
+                    EmptiedCount = g.Count(r => r.Status == Data.Enums.ReportStatus.Emptied),
+                    FullCount = g.Count(r => r.Status == Data.Enums.ReportStatus.Full),
+                    OverflowingCount = g.Count(r => r.Status == Data.Enums.ReportStatus.Overflowing),
+                    DamagedCount = g.Count(r => r.Status == Data.Enums.ReportStatus.Damaged)
                 })
                 .OrderByDescending(x => x.TotalReports)
                 .Take(4)
@@ -67,51 +67,68 @@ namespace SmartEcoWaste.Services.Services
                 .Include(r => r.Bin)
                 .Include(r => r.User)
                 .Include(r => r.VerifyByUser)
-                .Where(r => r.IsDeleted == false)
                 .Select(r => new GetReportsDto
                 {
                     Id = r.Id,
                     BinId = r.BinId,
-                    BinArea = r.Bin!.Area!,
-                    UserId = r.UserId,
-                    UserName = r.User!.Name,
+                    BinArea = r.Bin != null ? r.Bin.Area ?? string.Empty : string.Empty,
+                    UserId = r.UserId ?? 0,
+                    UserName = r.User != null ? r.User.Name : "Anonymous Citizen",
                     Status = r.Status,
                     VerifiedAt = r.VerifiedAt,
-                    VerifiedBy = r.VerifyByUser.Name,
+                    VerifiedBy = r.VerifyByUser != null ? r.VerifyByUser.Name : string.Empty,
                     CreatedAt = r.CreatedAt,
                 })
                 .ToListAsync();
 
             return ServiceResponse<List<GetReportsDto>>.Success(
                 reports,
-                "reports retrieved successfully"
+                "Reports retrieved successfully"
             );
         }
 
-        public async Task<ServiceResponse<string>> VerifyReportAsync(VerifyBinDto verify)
+        public async Task<ServiceResponse<string>> VerifyReportAsync(int collectorUserId, VerifyBinDto verify)
         {
-            var report = await _smartEcoWasteDbContext.Reports.FirstOrDefaultAsync(r => r.BinId == verify.BinId && r.UserId == verify.UserId && r.Status == Data.Enums.Status.Full && r.Id == verify.ReportId);
+            var report = await _smartEcoWasteDbContext.Reports
+                .FirstOrDefaultAsync(r => r.BinId == verify.BinId && (r.Status == Data.Enums.ReportStatus.Full || r.Status == Data.Enums.ReportStatus.Overflowing || r.Status == Data.Enums.ReportStatus.Damaged) && r.Id == verify.ReportId);
 
-            if (report != null)
+            if (report == null)
             {
-                report.Status = Data.Enums.Status.Emptied;
-                report.VerifiedAt = DateTime.UtcNow;
-                report.UpdatedAt = DateTime.UtcNow;
-                report.VerifiedBy = verify.CollecterId;
+                return ServiceResponse<string>.Fail("Report does not exist or does not belong to your organization.");
+            }
 
-                var bin = await _smartEcoWasteDbContext.Bins.FindAsync(report.BinId);
+            // Cross-tenant verification: Ensure collector belongs to the same organization
+            var collector = await _smartEcoWasteDbContext.Users
+                .FirstOrDefaultAsync(u => u.Id == collectorUserId && !u.IsDeleted);
+
+            if (collector == null)
+            {
+                return ServiceResponse<string>.Fail("Collector/verifier does not belong to your organization.");
+            }
+
+            report.Status = Data.Enums.ReportStatus.Resolved;
+            report.VerifiedAt = DateTime.UtcNow;
+            report.UpdatedAt = DateTime.UtcNow;
+            report.VerifiedBy = collectorUserId;
+
+            var bin = await _smartEcoWasteDbContext.Bins.FindAsync(report.BinId);
+            if (bin != null)
+            {
                 bin.Status = Data.Enums.Status.Emptied;
+            }
 
-                // Get existing user points
+            // If reported by an authenticated user, award points scoped to this tenant
+            if (report.UserId.HasValue && report.UserId.Value > 0)
+            {
                 var userPoints = await _smartEcoWasteDbContext.UsersPoints
-                    .FirstOrDefaultAsync(up => up.UserId == report.UserId);
-
+                    .FirstOrDefaultAsync(up => up.UserId == report.UserId.Value && up.TenantId == report.TenantId);
 
                 if (userPoints is null)
                 {
                     userPoints = new UserPoints
                     {
-                        UserId = report.UserId,
+                        TenantId = report.TenantId,
+                        UserId = report.UserId.Value,
                         Points = 100
                     };
 
@@ -121,15 +138,11 @@ namespace SmartEcoWaste.Services.Services
                 {
                     userPoints.Points += 100;
                 }
-
-                await _smartEcoWasteDbContext.SaveChangesAsync();
-
-                return ServiceResponse<string>.Success("Bin verified successfully.", "Bin verification successful.");
             }
-            else
-            {
-                return ServiceResponse<string>.Success(null, "Report does not exist");
-            }
+
+            await _smartEcoWasteDbContext.SaveChangesAsync();
+
+            return ServiceResponse<string>.Success("Bin verified successfully.", "Bin verification successful.");
         }
     }
 }

@@ -2,41 +2,184 @@
     <p-progressSpinner></p-progressSpinner>
 </div>
 <p-toast></p-toast>
-<div class="card flex flex-col gap-4">
-    <div class="font-semibold text-xl">New Bin</div>
-    <div class="flex flex-wrap items-start gap-6">
-        <div class="field">
-            <label for="Area" class="sr-only">Area</label>
-            <textarea pTextarea placeholder="Area" [(ngModel)]="newBin.area" [autoResize]="true" rows="1" cols="60"></textarea>
+
+<div class="card flex flex-col gap-5">
+    <div class="flex items-center justify-between pb-2 border-b border-surface-200 dark:border-surface-700">
+        <div>
+            <div class="font-bold text-2xl text-surface-900 dark:text-surface-0">Register Commercial Bin</div>
+            <p class="text-sm text-muted-color mt-1 mb-0">Integrate smart bins with the property, building, and waste zone hierarchy.</p>
         </div>
-        <div class="field">
-            <label for="Latitude" class="sr-only">Latitude</label>
-            <input pInputText id="Latitude" [(ngModel)]="newBin.latitude" type="text" placeholder="Latitude" />
-        </div>
-        <div class="field">
-            <label for="longitude1" class="sr-only">Longitude</label>
-            <input pInputText id="Longitude" [(ngModel)]="newBin.longitude" type="text" placeholder="Longitude" />
-        </div>
-        <p-button label="Submit" [fluid]="false" [disabled]="!newBin.area || !newBin.latitude || !newBin.longitude" (click)="saveBin()"></p-button>
     </div>
-    <p class="text-red-500">Select the location for the new bin on the map below</p>
-    <div class="flex flex-wrap items-start mt-2">
-        <p>
-            <span class="font-bold"> Key:</span> <p-button icon="fa-solid fa-trash" severity="success" text rounded />Empty <p-button icon="fa-solid fa-trash" severity="danger" text rounded />Full
-            <p-button icon="fa-solid fa-trash" severity="warn" text rounded />Overflowing <p-button icon="fa-solid fa-trash" severity="help" text rounded />Damaged
-        </p>
-        <div id="map" class="w-full rounded-lg shadow" style="height: 500px"></div>
+
+    <!-- Hierarchy & Bin Attributes Form -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- 1. Property Selection -->
+        <div class="flex flex-col gap-1">
+            <label for="property" class="font-semibold text-sm">Property <span class="text-red-500">*</span></label>
+            <p-select
+                id="property"
+                [options]="properties"
+                [(ngModel)]="selectedPropertyId"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Select Property"
+                [filter]="true"
+                filterBy="name,code"
+                (onChange)="onPropertyChange()"
+                class="w-full">
+            </p-select>
+        </div>
+
+        <!-- 2. Building Selection (Optional) -->
+        <div class="flex flex-col gap-1">
+            <label for="building" class="font-semibold text-sm">Building (Optional)</label>
+            <p-select
+                id="building"
+                [options]="buildings"
+                [(ngModel)]="selectedBuildingId"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="All / No specific building"
+                [disabled]="!selectedPropertyId"
+                (onChange)="onBuildingChange()"
+                class="w-full">
+            </p-select>
+        </div>
+
+        <!-- 3. Waste Zone Selection -->
+        <div class="flex flex-col gap-1">
+            <label for="wasteZone" class="font-semibold text-sm">Waste Zone <span class="text-red-500">*</span></label>
+            <p-select
+                id="wasteZone"
+                [options]="filteredWasteZones"
+                [(ngModel)]="newBin.wasteZoneId"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Select Waste Zone / Station"
+                [disabled]="!selectedPropertyId"
+                class="w-full">
+            </p-select>
+        </div>
+
+        <!-- 4. Bin Tag -->
+        <div class="flex flex-col gap-1">
+            <label for="binTag" class="font-semibold text-sm">Bin Tag (Physical Identifier) <span class="text-red-500">*</span></label>
+            <input
+                pInputText
+                id="binTag"
+                [(ngModel)]="newBin.binTag"
+                type="text"
+                placeholder="E.g. BIN-MALL-FC-01"
+                class="w-full uppercase font-mono" />
+        </div>
+
+        <!-- 5. Waste Category -->
+        <div class="flex flex-col gap-1">
+            <label for="category" class="font-semibold text-sm">Waste Category <span class="text-red-500">*</span></label>
+            <p-select
+                id="category"
+                [options]="categoryOptions"
+                [(ngModel)]="newBin.category"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select Category"
+                class="w-full">
+            </p-select>
+        </div>
+
+        <!-- 6. Capacity Liters -->
+        <div class="flex flex-col gap-1">
+            <label for="capacity" class="font-semibold text-sm">Capacity (Liters) <span class="text-red-500">*</span></label>
+            <p-inputNumber
+                id="capacity"
+                [(ngModel)]="newBin.capacityLiters"
+                [min]="10"
+                [max]="5000"
+                suffix=" L"
+                class="w-full">
+            </p-inputNumber>
+        </div>
+
+        <!-- 7. Indoor Area / Description -->
+        <div class="flex flex-col gap-1 md:col-span-2 lg:col-span-3">
+            <label for="area" class="font-semibold text-sm">Location / Indoor Description <span class="text-red-500">*</span></label>
+            <textarea
+                pTextarea
+                id="area"
+                placeholder="E.g. Level 2 Food Court near Service Exit B, or auto-filled via map pin"
+                [(ngModel)]="newBin.area"
+                [autoResize]="true"
+                rows="2"
+                class="w-full">
+            </textarea>
+        </div>
+
+        <!-- 8. Coordinates -->
+        <div class="flex flex-col gap-1">
+            <label for="latitude" class="font-semibold text-sm">Latitude <span class="text-red-500">*</span></label>
+            <input
+                pInputText
+                id="latitude"
+                [(ngModel)]="newBin.latitude"
+                type="number"
+                step="any"
+                placeholder="Latitude (from map)"
+                class="w-full" />
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <label for="longitude" class="font-semibold text-sm">Longitude <span class="text-red-500">*</span></label>
+            <input
+                pInputText
+                id="longitude"
+                [(ngModel)]="newBin.longitude"
+                type="number"
+                step="any"
+                placeholder="Longitude (from map)"
+                class="w-full" />
+        </div>
+
+        <div class="flex items-end">
+            <p-button
+                label="Create & Generate QR"
+                icon="pi pi-qrcode"
+                [disabled]="!isFormValid()"
+                (click)="saveBin()"
+                styleClass="p-button-success w-full">
+            </p-button>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="mt-4 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+            <div class="text-sm font-semibold text-muted-color">
+                <i class="pi pi-map-marker text-primary mr-1"></i> Click on the map to pin physical GPS coordinates (or auto-reverse geocode address):
+            </div>
+            <div class="text-xs flex items-center gap-2">
+                <span class="font-bold">Legend:</span>
+                <span class="text-green-600 font-semibold"><i class="fa-solid fa-trash"></i> Empty</span>
+                <span class="text-red-600 font-semibold"><i class="fa-solid fa-trash"></i> Full</span>
+                <span class="text-orange-500 font-semibold"><i class="fa-solid fa-trash"></i> Overflowing</span>
+                <span class="text-purple-600 font-semibold"><i class="fa-solid fa-trash"></i> Damaged</span>
+            </div>
+        </div>
+        <div id="map" class="w-full rounded-xl shadow-md border border-surface-200 dark:border-surface-700" style="height: 480px"></div>
     </div>
 </div>
 
+<!-- QR Code Download Dialog -->
 <p-dialog [(visible)]="qrCodeDialog" [style]="{ width: '450px' }" header="New Bin QR Code" [modal]="true">
     <ng-template #content>
-        <div class="card">
-            <p-image class="flex items-center" [src]="'data:image/png;base64,' + file" alt="Image" width="250" />
+        <div class="flex flex-col items-center justify-center gap-3 py-4">
+            <p-image [src]="'data:image/png;base64,' + file" alt="Bin QR Code" width="260" [preview]="true" />
+            <p class="text-sm text-muted-color text-center mb-0">
+                Print and affix this QR tag to the bin. Citizens and staff can scan it to view status, submit inspections, or report incidents.
+            </p>
         </div>
     </ng-template>
     <ng-template #footer>
-        <p-button label="Download" icon="pi pi-check" (click)="downloadQrCode()" />
+        <p-button label="Download PNG" icon="pi pi-download" (click)="downloadQrCode()" severity="primary" />
     </ng-template>
 </p-dialog>
 

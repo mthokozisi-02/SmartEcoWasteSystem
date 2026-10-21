@@ -60,6 +60,7 @@ export class ViewBins {
     bins = signal<BinResponseDto[]>([]);
 
     map!: L.Map;
+    markersLayer: L.LayerGroup = L.layerGroup();
 
     file = '';
 
@@ -97,7 +98,7 @@ export class ViewBins {
 
     setUserLocation() {
         if (!navigator.geolocation) {
-            alert('Geolocation not supported by your browser');
+            // Geolocation unsupported
             return;
         }
 
@@ -114,7 +115,7 @@ export class ViewBins {
             },
             (error) => {
                 console.error('Error getting location:', error);
-                alert('Please allow location access');
+                // Geolocation access denied
             }
         );
     }
@@ -157,16 +158,9 @@ export class ViewBins {
                     const bins = res.data;
                     this.bins.set(res.data);
 
-                    console.log('Bins loaded:', bins);
-
                     // Add markers for each bin
-                    bins.forEach((bin: BinResponseDto) => {
-                        L.marker([bin.latitude, bin.longitude], {
-                            icon: this.getIcon(bin.status)
-                        }).addTo(this.map).bindPopup(`
-                        Bin #${bin.id}
-                    `);
-                    });
+                    this.markersLayer.clearLayers();
+                    bins.forEach((bin: BinResponseDto) => { const tag = bin.binTag || ('Bin #' + bin.id); L.marker([bin.latitude, bin.longitude], { icon: this.getIcon(bin.status) }).addTo(this.markersLayer).bindPopup('<strong>' + tag + '</strong><br/>' + (bin.area || '')); });
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -178,3 +172,5 @@ export class ViewBins {
             .subscribe();
     }
 }
+
+

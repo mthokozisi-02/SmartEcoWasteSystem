@@ -124,7 +124,6 @@ export class Signup {
             .createUser(this.newUser)
             .pipe(
                 tap((res) => {
-                    console.log('Sign up response:', res);
                     this.showSuccess('Sign up successful');
                     this.router.navigate(['/auth/login'], {});
                 }),
@@ -141,3 +140,4 @@ export class Signup {
             .subscribe();
     }
 }
+

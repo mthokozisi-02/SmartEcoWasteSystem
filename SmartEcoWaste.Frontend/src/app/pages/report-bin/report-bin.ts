@@ -69,7 +69,7 @@ export class ReportBin implements OnInit {
 
     newReport: ReportBinDto = {
         binId: 0,
-        userId: 0,
+        // userId is intentionally omitted — derived from JWT on the backend
         status: StatusEnum.Full
     };
 
@@ -111,7 +111,6 @@ export class ReportBin implements OnInit {
     ngOnInit(): void {
         this.route.paramMap.subscribe((params) => {
             this.binId = Number(params.get('id'));
-            console.log('Reporting bin ID:', this.binId);
             this.loadBinDetails();
         });
     }
@@ -119,11 +118,10 @@ export class ReportBin implements OnInit {
     loadBinDetails() {
         this.isLoading = true;
         this.binService
-            .getAll()
+            .getPublicBin(this.binId)
             .pipe(
                 tap((res) => {
-                    const bins = res.data || [];
-                    this.bin = bins.find((b: any) => b.id === this.binId) || null;
+                    this.bin = res.data || res || null;
                     if (this.bin) {
                         this.initializeMap();
                     } else {
@@ -180,13 +178,13 @@ export class ReportBin implements OnInit {
     submitReport() {
         this.isLoading = true;
         this.newReport.binId = this.binId;
-        this.newReport.userId = Number(localStorage.getItem('user_id'));
+        // userId is intentionally NOT sent from the client.
+        // The backend derives the authenticated user's identity from the JWT token.
 
         this.binService
             .reportBin(this.newReport)
             .pipe(
                 tap((res) => {
-                    console.log('Report response:', res);
                     this.showSuccess('Bin reported successfully! +25 Eco Points added to your profile.');
                     setTimeout(() => {
                         this.router.navigateByUrl('/landing');
@@ -222,3 +220,4 @@ export class ReportBin implements OnInit {
         return parts.slice(0, 3).join(',').trim();
     }
 }
+

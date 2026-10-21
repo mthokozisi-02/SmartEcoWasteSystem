@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SmartEcoWaste.Infrastructure.DbContexts;
@@ -7,10 +9,10 @@ using SmartEcoWaste.Infrastructure.MultiTenancy;
 using SmartEcoWaste.Infrastructure.Seeding;
 using SmartEcoWaste.Services.Interfaces;
 using SmartEcoWaste.Services.Services;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -22,6 +24,7 @@ builder.Services.AddScoped<IBinService, BinService>();
 builder.Services.AddScoped<IReportBin,  ReportBinService>();
 builder.Services.AddScoped<IPropertyService, PropertyService>();
 builder.Services.AddScoped<ICollectionTaskService, CollectionTaskService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 builder.Services.AddAutoMapper(cfg =>
 {
@@ -34,6 +37,36 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(
             new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
+
+// Rate Limiting (Login, Signup, Public QR Reporting)
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Strict policy for auth endpoints (e.g. 10 requests per minute per IP)
+    options.AddPolicy("AuthRateLimit", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 15,
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+
+    // Public QR report endpoint policy (30 requests per minute per IP)
+    options.AddPolicy("PublicReportRateLimit", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 30,
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+});
 
 // Add services to the container.
 builder.Services.AddDbContext<SmartEcoWasteDbContext>((sp, options) =>
@@ -74,7 +107,10 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAsync(dbContext);
 }
 
-// Configure the HTTP request pipeline.
+// Pipeline: Correlation ID & Global Exception Handling first
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors(x => x
@@ -85,6 +121,8 @@ app.UseCors(x => x
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseMiddleware<AuthMiddleware>();

@@ -1,53 +1,129 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Update;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SmartEcoWaste.Data.Dtos;
 using SmartEcoWaste.Data.Entities;
 using SmartEcoWaste.Infrastructure.DbContexts;
+using SmartEcoWaste.Infrastructure.MultiTenancy;
 using SmartEcoWaste.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SmartEcoWaste.Services.Services
 {
-    public class UserService(IMapper mapper, SmartEcoWasteDbContext smartEcoWasteDb, IConfiguration configuration) : IUserService
+    public class UserService(IMapper mapper, SmartEcoWasteDbContext smartEcoWasteDb, IConfiguration configuration, ITenantContextAccessor tenantAccessor) : IUserService
     {
         private readonly IConfiguration _configuration = configuration;
         private readonly IMapper _mapper = mapper;
         private readonly SmartEcoWasteDbContext _smartEcoWasteDb = smartEcoWasteDb;
+        private readonly ITenantContextAccessor _tenantAccessor = tenantAccessor;
 
         public async Task<ServiceResponse<string>> CreateAsyc(UserDto userDto)
         {
-            userDto.PasswordHash = new PasswordHasher<User>()
-                .HashPassword(new User(), userDto.PasswordHash);
-            var newUser = _mapper.Map<User>(userDto);
+            if (string.IsNullOrWhiteSpace(userDto.Email))
+            {
+                return ServiceResponse<string>.Fail("Email is required.");
+            }
+
+            var emailExists = await _smartEcoWasteDb.Users
+                .IgnoreQueryFilters()
+                .AnyAsync(u => u.Email.ToLower() == userDto.Email.Trim().ToLower());
+
+            if (emailExists)
+            {
+                return ServiceResponse<string>.Fail("An account with this email address already exists.");
+            }
+
+            // Resolve target tenant securely
+            Tenant? targetTenant = null;
+            if (!string.IsNullOrWhiteSpace(userDto.TenantCode))
+            {
+                targetTenant = await _smartEcoWasteDb.Tenants
+                    .FirstOrDefaultAsync(t => t.Code == userDto.TenantCode.Trim() && t.IsActive && !t.IsDeleted);
+
+                if (targetTenant == null)
+                {
+                    return ServiceResponse<string>.Fail("Specified organization code is invalid or inactive.");
+                }
+            }
+            else if (userDto.TenantId.HasValue && userDto.TenantId.Value > 0)
+            {
+                targetTenant = await _smartEcoWasteDb.Tenants
+                    .FirstOrDefaultAsync(t => t.Id == userDto.TenantId.Value && t.IsActive && !t.IsDeleted);
+
+                if (targetTenant == null)
+                {
+                    return ServiceResponse<string>.Fail("Specified organization is invalid or inactive.");
+                }
+            }
+            else
+            {
+                // Default to first active public organization
+                targetTenant = await _smartEcoWasteDb.Tenants
+                    .FirstOrDefaultAsync(t => t.IsActive && !t.IsDeleted);
+
+                if (targetTenant == null)
+                {
+                    return ServiceResponse<string>.Fail("No active organization found to register with.");
+                }
+            }
+
+            var newUser = new User
+            {
+                Name = userDto.Name,
+                Email = userDto.Email.Trim(),
+                PasswordHash = new PasswordHasher<User>().HashPassword(new User(), userDto.PasswordHash),
+                TenantId = targetTenant.Id,
+                RoleId = 2, // Always regular User role on public registration
+                IsEmailConfirmed = false
+            };
+
             _smartEcoWasteDb.Users.Add(newUser);
             await _smartEcoWasteDb.SaveChangesAsync();
 
-
-            var response = ServiceResponse<string>.Success(
+            return ServiceResponse<string>.Success(
                 "User created successfully",
                 "User created successfully"
             );
-
-            return response;
         }
 
-        private async Task<User?> ValidateRefreshTokenAsync(int userId, string refreshToken)
+        // ──────────────────────────────────────────────────────────────────────
+        // REFRESH-TOKEN HELPERS
+        // ──────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Produces the SHA-256 hex digest of a raw refresh token so that only
+        /// the hash — never the plaintext — is stored in the database.
+        /// </summary>
+        private static string HashRefreshToken(string rawToken)
         {
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
+            return Convert.ToHexString(bytes).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Validates a raw refresh token by hashing it and comparing against the
+        /// stored hash.  Also checks expiry and that the account is still active.
+        /// The caller never supplies a UserId — the lookup is entirely token-driven.
+        /// </summary>
+        private async Task<User?> ValidateRefreshTokenAsync(string rawToken)
+        {
+            var hash = HashRefreshToken(rawToken);
             var user = await _smartEcoWasteDb.Users
+                .IgnoreQueryFilters()
                 .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Id == userId);
-            if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+                .Include(u => u.Tenant)
+                .FirstOrDefaultAsync(u => u.RefreshToken == hash && !u.IsDeleted);
+
+            if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
                 return null;
             }
@@ -56,13 +132,34 @@ namespace SmartEcoWaste.Services.Services
 
         public async Task<ServiceResponse<TokenResponseDto>> RefreshTokensAsync(RefreshTokenRequestDto request)
         {
-            var user = await ValidateRefreshTokenAsync(request.UserId, request.RefreshToken);
+            var user = await ValidateRefreshTokenAsync(request.RefreshToken);
             if (user == null)
             {
-                return ServiceResponse<TokenResponseDto>.Fail("Invalid refresh token or user ID.");
+                return ServiceResponse<TokenResponseDto>.Fail("Refresh token is invalid, expired, or has already been used.");
             }
 
+            _tenantAccessor.SetTenant(user.TenantId, false);
+            // CreateTokenResponse issues a new refresh token (rotation) and persists the new hash
             return await CreateTokenResponse(user);
+        }
+
+        public async Task<ServiceResponse<string>> RevokeRefreshTokenAsync(string rawToken)
+        {
+            var hash = HashRefreshToken(rawToken);
+            var user = await _smartEcoWasteDb.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.RefreshToken == hash);
+
+            if (user != null)
+            {
+                user.RefreshToken = null;
+                user.RefreshTokenExpiryTime = null;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _smartEcoWasteDb.SaveChangesAsync();
+            }
+
+            // Always return success — do not reveal whether the token existed
+            return ServiceResponse<string>.Success("", "Logged out successfully.");
         }
 
         public async Task<ServiceResponse<TokenResponseDto>> LoginAsync(LoginDto userDto)
@@ -91,6 +188,7 @@ namespace SmartEcoWaste.Services.Services
             if (new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, userDto.PasswordHash)
                 == PasswordVerificationResult.Success)
             {
+                _tenantAccessor.SetTenant(user.TenantId, false);
                 var response = await CreateTokenResponse(user);
                 return response;
             }
@@ -108,11 +206,15 @@ namespace SmartEcoWaste.Services.Services
                     .FirstOrDefaultAsync(t => t.Id == user.TenantId);
             }
 
+            var expiryMinutes = int.TryParse(_configuration["AppSettings:ExpiryMinutes"], out var minutes) ? minutes : 15;
+            var rawRefreshToken = await GenerateAndSaveRefreshTokenAsync(user);
+
             var response = new TokenResponseDto
             {
-                AccessToken = CreateToken(user),
-                RefreshToken = await GenerateAndSaveRefreshTokenAsync(user),
-                ExpiresIn = 24 * 60 * 60, // 1 day in seconds
+                AccessToken = CreateToken(user, expiryMinutes),
+                RefreshToken = rawRefreshToken,
+                ExpiresIn = expiryMinutes * 60,
+                UserId = user.Id,
                 TenantId = user.TenantId,
                 TenantName = user.Tenant?.Name ?? "Main Workspace",
                 TenantCode = user.Tenant?.Code ?? "MAIN",
@@ -127,26 +229,26 @@ namespace SmartEcoWaste.Services.Services
             );
         }
 
-        private string GenerateRefreshToken()
-        {
-            var randomNumber = new byte[32];
-            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(randomNumber);
-                return Convert.ToBase64String(randomNumber);
-            }
-        }
-
+        /// <summary>
+        /// Generates a cryptographically random 32-byte refresh token, stores its SHA-256
+        /// hash (never the raw value), and returns the raw token for the client.
+        /// Rotation: every call replaces the old hash — previous refresh tokens are invalidated.
+        /// </summary>
         private async Task<string> GenerateAndSaveRefreshTokenAsync(User user)
         {
-            var refreshToken = GenerateRefreshToken();
-            user.RefreshToken = refreshToken;
-            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            var randomBytes = new byte[32];
+            RandomNumberGenerator.Fill(randomBytes);
+            var rawToken = Convert.ToBase64String(randomBytes);
+
+            var refreshTokenExpiryDays = int.TryParse(_configuration["AppSettings:RefreshTokenExpiryDays"], out var days) ? days : 7;
+            user.RefreshToken = HashRefreshToken(rawToken);   // store hash only
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
+            user.UpdatedAt = DateTime.UtcNow;
             await _smartEcoWasteDb.SaveChangesAsync();
-            return refreshToken;
+            return rawToken;   // return raw token to the client
         }
 
-        private string CreateToken(User user)
+        private string CreateToken(User user, int expiryMinutes)
         {
             var claims = new List<Claim>
             {
@@ -164,16 +266,17 @@ namespace SmartEcoWaste.Services.Services
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
 
-            var tokenDecriptor = new JwtSecurityToken(
+            var tokenDescriptor = new JwtSecurityToken(
                 issuer: _configuration["AppSettings:Issuer"],
                 audience: _configuration["AppSettings:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddDays(1),
+                expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
                 signingCredentials: creds
             );
 
-            return new JwtSecurityTokenHandler().WriteToken(tokenDecriptor);
+            return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
         }
+
 
         public async Task<ServiceResponse<List<UserResponseDto>>> GetAllAsync()
         {
@@ -184,15 +287,15 @@ namespace SmartEcoWaste.Services.Services
                 .Where(u => u.IsDeleted == false)
                 .ToListAsync();
 
-
             var results = _mapper.Map<List<UserResponseDto>>(users);
 
-            //get userpoints
-            foreach (var user in results) {
+            foreach (var user in results)
+            {
                 user.RoleName = user.Role.Name;
                 user.Reports = user.UserReports!.Count;
-                user.UserPoints = user.Points!
-                    .Sum(up => up.Points);
+                user.UserPoints = user.Points != null
+                    ? user.Points.Sum(up => up.Points)
+                    : 0;
             }
 
             return ServiceResponse<List<UserResponseDto>>.Success(
@@ -201,55 +304,148 @@ namespace SmartEcoWaste.Services.Services
             );
         }
 
-        public async Task<ServiceResponse<string>> AssignRolesAsync(AssignUserRolesDto userRole)
+        public async Task<ServiceResponse<string>> AssignRolesAsync(int adminUserId, AssignUserRolesDto userRole)
         {
-            var user = await _smartEcoWasteDb.Users
-                .FirstOrDefaultAsync(u => u.Id == userRole.UserId);
+            var targetUser = await _smartEcoWasteDb.Users
+                .FirstOrDefaultAsync(u => u.Id == userRole.UserId && !u.IsDeleted);
 
-            if (user == null)
+            if (targetUser == null)
             {
-                return ServiceResponse<string>.Fail("User not found");
+                return ServiceResponse<string>.Fail("User not found in your organization.");
             }
 
-            user.RoleId = userRole.RoleId;
+            // Prevent self-lockout
+            if (adminUserId == userRole.UserId)
+            {
+                return ServiceResponse<string>.Fail("Administrators cannot modify their own role.");
+            }
 
+            // Validate target role
+            var targetRole = await _smartEcoWasteDb.Roles
+                .FirstOrDefaultAsync(r => r.Id == userRole.RoleId && !r.IsDeleted);
+
+            if (targetRole == null)
+            {
+                return ServiceResponse<string>.Fail("Specified role does not exist.");
+            }
+
+            // Prevent unauthorized privilege escalation to SuperAdmin
+            if (targetRole.Name.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            {
+                return ServiceResponse<string>.Fail("Unauthorized: Cannot assign platform SuperAdmin role.");
+            }
+
+            targetUser.RoleId = userRole.RoleId;
             await _smartEcoWasteDb.SaveChangesAsync();
 
             return ServiceResponse<string>.Success(
                 "Role assigned successfully",
-                "User role updated"
+                $"User '{targetUser.Name}' role updated to '{targetRole.Name}'"
             );
         }
 
-        public async Task<ServiceResponse<string>> UpdateUserAsync(UpdatePasswordDto update)
+        public async Task<ServiceResponse<string>> ChangePasswordAsync(int userId, ChangePasswordDto dto)
         {
-            var user = await _smartEcoWasteDb.Users.FindAsync(update.UserId) ?? throw new Exception("User not found.");
-            user.PasswordHash = new PasswordHasher<User>()
-                .HashPassword(new User(), update.Password);
+            var user = await _smartEcoWasteDb.Users.FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted);
+            if (user == null)
+            {
+                return ServiceResponse<string>.Fail("User account not found.");
+            }
 
+            // Verify current password
+            var hasher = new PasswordHasher<User>();
+            var verifyResult = hasher.VerifyHashedPassword(user, user.PasswordHash, dto.CurrentPassword);
+            if (verifyResult != PasswordVerificationResult.Success)
+            {
+                return ServiceResponse<string>.Fail("Current password is incorrect.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+            {
+                return ServiceResponse<string>.Fail("New password must be at least 6 characters.");
+            }
+
+            user.PasswordHash = hasher.HashPassword(user, dto.NewPassword);
             await _smartEcoWasteDb.SaveChangesAsync();
-            return ServiceResponse<string>.Success(
-                "",
-                "Password updated successfully");
+
+            return ServiceResponse<string>.Success("", "Password changed successfully.");
         }
 
-        public async Task<ServiceResponse<string>> DeleteUserAsync(int userId)
+        public async Task<ServiceResponse<string>> AdminResetPasswordAsync(int adminUserId, AdminResetPasswordDto dto)
         {
-            var user = await _smartEcoWasteDb.Users.FindAsync(userId);
+            var targetUser = await _smartEcoWasteDb.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == dto.TargetUserId && !u.IsDeleted);
+
+            if (targetUser == null)
+            {
+                return ServiceResponse<string>.Fail("Target user not found in your organization.");
+            }
+
+            if (targetUser.Role?.Name.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return ServiceResponse<string>.Fail("Cannot reset the password of a platform SuperAdmin.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+            {
+                return ServiceResponse<string>.Fail("New password must be at least 6 characters.");
+            }
+
+            var hasher = new PasswordHasher<User>();
+            targetUser.PasswordHash = hasher.HashPassword(targetUser, dto.NewPassword);
+            await _smartEcoWasteDb.SaveChangesAsync();
+
+            return ServiceResponse<string>.Success("", $"Password reset successfully for user '{targetUser.Name}'.");
+        }
+
+        public async Task<ServiceResponse<string>> UpdateUserAsync(int callerUserId, bool isAdmin, UpdatePasswordDto update)
+        {
+            // Enforce ownership: only self or tenant Admin can update password
+            if (update.UserId != callerUserId && !isAdmin)
+            {
+                return ServiceResponse<string>.Fail("Unauthorized to change another user's password.");
+            }
+
+            var user = await _smartEcoWasteDb.Users.FirstOrDefaultAsync(u => u.Id == update.UserId && !u.IsDeleted);
             if (user == null)
-                throw new Exception("User not found.");
+            {
+                return ServiceResponse<string>.Fail("User not found in your organization.");
+            }
+
+            if (string.IsNullOrWhiteSpace(update.Password) || update.Password.Length < 6)
+            {
+                return ServiceResponse<string>.Fail("Password must be at least 6 characters.");
+            }
+
+            user.PasswordHash = new PasswordHasher<User>().HashPassword(user, update.Password);
+            await _smartEcoWasteDb.SaveChangesAsync();
+
+            return ServiceResponse<string>.Success("", "Password updated successfully.");
+        }
+
+        public async Task<ServiceResponse<string>> DeleteUserAsync(int adminUserId, int targetUserId)
+        {
+            if (adminUserId == targetUserId)
+            {
+                return ServiceResponse<string>.Fail("You cannot delete your own account.");
+            }
+
+            var user = await _smartEcoWasteDb.Users.FirstOrDefaultAsync(u => u.Id == targetUserId && !u.IsDeleted);
+            if (user == null)
+            {
+                return ServiceResponse<string>.Fail("User not found in your organization.");
+            }
 
             user.IsDeleted = true;
             await _smartEcoWasteDb.SaveChangesAsync();
-            return ServiceResponse<string>.Success(
-                "",
-                $"{user.Name} deleted successfully");
+            return ServiceResponse<string>.Success("", $"{user.Name} deleted successfully");
         }
 
         public async Task<ServiceResponse<List<Role>>> GetAllRolesAsync()
         {
             var roles = await _smartEcoWasteDb.Roles
-                .Where(r => r.IsDeleted == false)
+                .Where(r => r.IsDeleted == false && r.Name != "SuperAdmin")
                 .ToListAsync();
 
             return ServiceResponse<List<Role>>.Success(
@@ -258,20 +454,33 @@ namespace SmartEcoWaste.Services.Services
             );
         }
 
-        public async Task<ServiceResponse<GetUserDto>> GetUser(int userId)
+        public async Task<ServiceResponse<GetUserDto>> GetUser(int callerUserId, bool isAdminOrSupervisor, int targetUserId)
         {
+            // Ownership check: Caller must be the target user or have Admin/Supervisor role
+            if (callerUserId != targetUserId && !isAdminOrSupervisor)
+            {
+                return ServiceResponse<GetUserDto>.Fail("Unauthorized: You can only view your own profile.");
+            }
+
             var user = await _smartEcoWasteDb.Users
                 .Include(u => u.UserReports)
                 .Include(u => u.Points)
                 .Where(u => u.IsDeleted == false)
-                .FirstOrDefaultAsync(u => u.Id == userId) ?? throw new Exception("User not found");
+                .FirstOrDefaultAsync(u => u.Id == targetUserId);
+
+            if (user == null)
+            {
+                return ServiceResponse<GetUserDto>.Fail("User not found in your organization.");
+            }
 
             var results = new GetUserDto
             {
                 Name = user.Name,
                 Email = user.Email,
                 Reports = user.UserReports!.Count,
-                Points = user.Points!.Sum(up => up.Points),
+                Points = user.Points != null
+                    ? user.Points.Sum(up => up.Points)
+                    : 0,
             };
 
             return ServiceResponse<GetUserDto>.Success(

@@ -1,5 +1,9 @@
 export interface CreateBinDto {
-    id: number;
+    id?: number;
+    wasteZoneId?: number;
+    binTag: string;
+    category: number | string;
+    capacityLiters: number;
     area: string;
     latitude: number;
     longitude: number;

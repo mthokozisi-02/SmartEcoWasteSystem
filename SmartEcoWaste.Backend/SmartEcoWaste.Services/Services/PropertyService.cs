@@ -84,7 +84,7 @@ namespace SmartEcoWaste.Services.Services
 
             if (p == null)
             {
-                return ServiceResponse<ResponsePropertyDto>.Fail("Property not found");
+                return ServiceResponse<ResponsePropertyDto>.Fail("Property not found in your organization");
             }
 
             var response = new ResponsePropertyDto
@@ -107,14 +107,16 @@ namespace SmartEcoWaste.Services.Services
 
         public async Task<ServiceResponse<ResponseBuildingDto>> CreateBuildingAsync(CreateBuildingDto dto)
         {
-            var property = await _context.Properties.FindAsync(dto.PropertyId);
+            // Cross-tenant check: Parent property must belong to the current tenant
+            var property = await _context.Properties.FirstOrDefaultAsync(p => p.Id == dto.PropertyId && !p.IsDeleted);
             if (property == null)
             {
-                return ServiceResponse<ResponseBuildingDto>.Fail("Parent property does not exist");
+                return ServiceResponse<ResponseBuildingDto>.Fail("Parent property does not exist or does not belong to your organization.");
             }
 
             var building = new Building
             {
+                TenantId = property.TenantId,
                 PropertyId = dto.PropertyId,
                 Name = dto.Name,
                 Code = dto.Code,
@@ -158,24 +160,27 @@ namespace SmartEcoWaste.Services.Services
 
         public async Task<ServiceResponse<ResponseWasteZoneDto>> CreateWasteZoneAsync(CreateWasteZoneDto dto)
         {
-            var property = await _context.Properties.FindAsync(dto.PropertyId);
+            // 1. Cross-tenant check: Parent property must belong to the current tenant
+            var property = await _context.Properties.FirstOrDefaultAsync(p => p.Id == dto.PropertyId && !p.IsDeleted);
             if (property == null)
             {
-                return ServiceResponse<ResponseWasteZoneDto>.Fail("Property does not exist");
+                return ServiceResponse<ResponseWasteZoneDto>.Fail("Parent property does not exist or does not belong to your organization.");
             }
 
+            // 2. Cross-tenant check: If building is specified, it must belong to this property and tenant
             Building? building = null;
             if (dto.BuildingId.HasValue)
             {
-                building = await _context.Buildings.FindAsync(dto.BuildingId.Value);
-                if (building == null || building.PropertyId != dto.PropertyId)
+                building = await _context.Buildings.FirstOrDefaultAsync(b => b.Id == dto.BuildingId.Value && b.PropertyId == dto.PropertyId && !b.IsDeleted);
+                if (building == null)
                 {
-                    return ServiceResponse<ResponseWasteZoneDto>.Fail("Building does not belong to the specified property");
+                    return ServiceResponse<ResponseWasteZoneDto>.Fail("Specified building does not exist or does not belong to this property in your organization.");
                 }
             }
 
             var zone = new WasteZone
             {
+                TenantId = property.TenantId,
                 PropertyId = dto.PropertyId,
                 BuildingId = dto.BuildingId,
                 Name = dto.Name,

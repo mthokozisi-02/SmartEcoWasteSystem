@@ -21,7 +21,6 @@ export class ReportService {
     }
 
     clearReport(report: VerifyBinDto): Observable<any> {
-        console.log(report);
         return this.http.post<any>(`${apiUrl}/verify-report`, report);
     }
 
@@ -29,3 +28,4 @@ export class ReportService {
         return this.http.delete<any>(`${apiUrl}/delete-report/${Id}`);
     }
 }
+

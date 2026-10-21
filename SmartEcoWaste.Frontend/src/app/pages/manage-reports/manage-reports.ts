@@ -129,7 +129,6 @@ export class ManageReports {
                     } else if (report == 'Damaged') {
                         this.filteredReports.set(res.data.filter((r: ReportResponseDto) => r.status == StatusEnum.Damaged));
                     }
-                    console.log('reports:', this.filteredReports());
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -158,7 +157,6 @@ export class ManageReports {
                     .clearReport(this.verify)
                     .pipe(
                         tap((res) => {
-                            console.log('Report response:', res);
                             this.showSuccess('Bin cleared successfully');
                             this.loadReports(this.category);
                         }),
@@ -185,7 +183,6 @@ export class ManageReports {
     }
 
     deleteReport(id: number) {
-        console.log(id);
         this.confirmationService.confirm({
             message: `Are you sure you want to delete this report?`,
             header: 'Confirm',
@@ -259,3 +256,4 @@ export class ManageReports {
         this.loadReports(this.category);
     }
 }
+

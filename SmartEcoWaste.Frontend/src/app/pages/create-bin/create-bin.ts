@@ -1,5 +1,6 @@
 import { BinService } from '@/core/services/bin.service';
-import { Component, DestroyRef, inject, signal, ChangeDetectorRef } from '@angular/core';
+import { PropertyService } from '@/core/services/property.service';
+import { Component, DestroyRef, inject, signal, ChangeDetectorRef, OnInit, AfterViewInit } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FluidModule } from 'primeng/fluid';
 import { InputTextModule } from 'primeng/inputtext';
@@ -28,6 +29,11 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { BinResponseDto } from 'src/assets/interfaces/bin-response-dto';
 import { StatusEnum } from 'src/assets/enums/status-enum';
 import { ImageModule } from 'primeng/image';
+import {
+    ResponsePropertyDto,
+    ResponseBuildingDto,
+    ResponseWasteZoneDto
+} from 'src/assets/interfaces/commercial-saas-dtos';
 
 @Component({
     selector: 'app-create-bin',
@@ -58,14 +64,41 @@ import { ImageModule } from 'primeng/image';
     styleUrl: './create-bin.scss',
     providers: [MessageService, ConfirmationService]
 })
-export class CreateBin {
+export class CreateBin implements OnInit, AfterViewInit {
     bins = signal<BinResponseDto[]>([]);
 
     map!: L.Map;
 
     file = '';
 
-    newBin: CreateBinDto = {} as CreateBinDto;
+    newBin: CreateBinDto = {
+        binTag: '',
+        category: 0,
+        capacityLiters: 240,
+        area: '',
+        latitude: 0,
+        longitude: 0,
+        url: ''
+    };
+
+    // Hierarchy selection
+    properties: ResponsePropertyDto[] = [];
+    buildings: ResponseBuildingDto[] = [];
+    allWasteZones: ResponseWasteZoneDto[] = [];
+    filteredWasteZones: ResponseWasteZoneDto[] = [];
+
+    selectedPropertyId?: number;
+    selectedBuildingId?: number;
+
+    categoryOptions = [
+        { label: 'General Waste', value: 0 },
+        { label: 'Plastic & Bottles', value: 1 },
+        { label: 'Paper & Cardboard', value: 2 },
+        { label: 'Glass', value: 3 },
+        { label: 'Organic / Food Waste', value: 4 },
+        { label: 'Electronic Waste', value: 5 },
+        { label: 'Hazardous Chemical', value: 6 }
+    ];
 
     isLoading = false;
 
@@ -97,12 +130,81 @@ export class CreateBin {
 
     constructor(
         private binService: BinService,
+        private propertyService: PropertyService,
         private messageService: MessageService,
-        private confirmationService: ConfirmationService, private cdr: ChangeDetectorRef
+        private confirmationService: ConfirmationService,
+        private cdr: ChangeDetectorRef
     ) {}
 
+    ngOnInit(): void {
+        this.loadProperties();
+    }
+
+    loadProperties() {
+        this.propertyService.getAllProperties().pipe(
+            tap((res) => {
+                if (res.isSuccess) {
+                    this.properties = res.data || [];
+                }
+            }),
+            catchError((err) => {
+                this.showError(err);
+                return [];
+            }),
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe();
+    }
+
+    onPropertyChange() {
+        this.selectedBuildingId = undefined;
+        this.newBin.wasteZoneId = undefined;
+        this.buildings = [];
+        this.allWasteZones = [];
+        this.filteredWasteZones = [];
+
+        if (!this.selectedPropertyId) return;
+
+        // Load buildings for this property
+        this.propertyService.getBuildings(this.selectedPropertyId).pipe(
+            tap((res) => {
+                if (res.isSuccess) {
+                    this.buildings = res.data || [];
+                }
+            }),
+            catchError((err) => {
+                this.showError(err);
+                return [];
+            }),
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe();
+
+        // Load waste zones for this property
+        this.propertyService.getWasteZones(this.selectedPropertyId).pipe(
+            tap((res) => {
+                if (res.isSuccess) {
+                    this.allWasteZones = res.data || [];
+                    this.filteredWasteZones = [...this.allWasteZones];
+                }
+            }),
+            catchError((err) => {
+                this.showError(err);
+                return [];
+            }),
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe();
+    }
+
+    onBuildingChange() {
+        this.newBin.wasteZoneId = undefined;
+        if (this.selectedBuildingId) {
+            this.filteredWasteZones = this.allWasteZones.filter(z => z.buildingId === this.selectedBuildingId);
+        } else {
+            this.filteredWasteZones = [...this.allWasteZones];
+        }
+    }
+
     ngAfterViewInit(): void {
-        this.map = L.map('map').setView([0, 0], 2); // temporary default
+        this.map = L.map('map').setView([0, 0], 2);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
@@ -115,27 +217,28 @@ export class CreateBin {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
 
-            console.log('Latitude:', lat);
-            console.log('Longitude:', lng);
-
-            this.newBin.latitude = lat;
-            this.newBin.longitude = lng;
+            this.newBin.latitude = Number(lat.toFixed(6));
+            this.newBin.longitude = Number(lng.toFixed(6));
 
             this.isLoading = true;
-            this.binService.reverseGeocode(lat, lng).subscribe((res) => {
-                const address = res.display_name;
-                console.log(address);
-                this.newBin.area = address;
-
-                L.popup().setLatLng([lat, lng]).setContent(address).openOn(this.map);
-                this.isLoading = false;
+            this.binService.reverseGeocode(lat, lng).subscribe({
+                next: (res) => {
+                    const address = res.display_name;
+                    if (!this.newBin.area) {
+                        this.newBin.area = address;
+                    }
+                    L.popup().setLatLng([lat, lng]).setContent(address).openOn(this.map);
+                    this.isLoading = false;
+                },
+                error: () => {
+                    this.isLoading = false;
+                }
             });
         });
     }
 
     setUserLocation() {
         if (!navigator.geolocation) {
-            alert('Geolocation not supported by your browser');
             return;
         }
 
@@ -144,15 +247,11 @@ export class CreateBin {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
 
-                // Center map to user
                 this.map.setView([lat, lng], 15);
-
-                // Add marker for user
                 L.marker([lat, lng]).addTo(this.map).bindPopup('You are here').openPopup();
             },
             (error) => {
                 console.error('Error getting location:', error);
-                alert('Please allow location access');
             }
         );
     }
@@ -169,21 +268,21 @@ export class CreateBin {
             return L.divIcon({
                 html: `<i class="fa-solid fa-trash" style="color: rgba(209, 30, 30, 1); font-size: 20px;"></i>`,
                 className: '',
-                iconSize: [40, 40],
+                iconSize: [20, 20],
                 iconAnchor: [10, 10]
             });
         } else if (status === StatusEnum.Overflowing) {
             return L.divIcon({
                 html: `<i class="fa-solid fa-trash" style="color: rgba(255, 165, 0, 1); font-size: 20px;"></i>`,
                 className: '',
-                iconSize: [40, 40],
+                iconSize: [20, 20],
                 iconAnchor: [10, 10]
             });
         } else if (status === StatusEnum.Damaged) {
             return L.divIcon({
-                html: `<i class="fa-solid fa-trash" style="color: rgba(255, 165, 0, 1); font-size: 20px;"></i>`,
+                html: `<i class="fa-solid fa-trash" style="color: rgba(147, 51, 234, 1); font-size: 20px;"></i>`,
                 className: '',
-                iconSize: [40, 40],
+                iconSize: [20, 20],
                 iconAnchor: [10, 10]
             });
         } else {
@@ -196,26 +295,48 @@ export class CreateBin {
         }
     }
 
+    isFormValid(): boolean {
+        return !!(
+            this.selectedPropertyId &&
+            this.newBin.wasteZoneId &&
+            this.newBin.binTag?.trim() &&
+            this.newBin.area?.trim() &&
+            this.newBin.capacityLiters > 0 &&
+            this.newBin.latitude &&
+            this.newBin.longitude
+        );
+    }
+
     saveBin() {
+        if (!this.isFormValid()) {
+            this.showError({ error: { message: 'Please fill in all required fields: Property, Waste Zone, Bin Tag, Area, and GPS coordinates.' } });
+            return;
+        }
+
         this.isLoading = true;
         this.newBin.url = this.frontendUrl;
-
-        console.log(this.newBin);
 
         this.binService
             .createBin(this.newBin)
             .pipe(
                 tap((res) => {
                     this.file = res.data;
-                    console.log('Bin created with ID:', res);
-                    this.showSuccess('Bin created successfully');
+                    this.showSuccess('Bin registered and integrated into facility successfully!');
                     this.loadBins();
+                    // Reset tag and coordinates
+                    this.newBin.binTag = '';
+                    this.newBin.area = '';
                 }),
                 catchError((err) => {
                     this.showError(err);
                     return [];
                 }),
-                finalize(() => ((this.isLoading = false), (this.qrCodeDialog = true))),
+                finalize(() => {
+                    this.isLoading = false;
+                    if (this.file) {
+                        this.qrCodeDialog = true;
+                    }
+                }),
                 takeUntilDestroyed(this.destroyRef)
             )
             .subscribe();
@@ -228,18 +349,18 @@ export class CreateBin {
             .getAll()
             .pipe(
                 tap((res) => {
-                    const bins = res.data;
+                    const bins = res.data || [];
                     this.bins.set(bins);
 
-                    console.log('Bins loaded:', bins);
-
-                    // Add markers for each bin
                     bins.forEach((bin: BinResponseDto) => {
+                        const tag = bin.binTag || `Bin #${bin.id}`;
+                        const zone = bin.wasteZoneName ? ` (${bin.wasteZoneName})` : '';
                         L.marker([bin.latitude, bin.longitude], {
                             icon: this.getIcon(bin.status)
                         }).addTo(this.map).bindPopup(`
-                        Bin #${bin.id}
-                    `);
+                            <strong>${tag}</strong>${zone}<br/>
+                            <small>${bin.area || ''}</small>
+                        `);
                     });
                 }),
                 catchError((err) => {
@@ -270,7 +391,8 @@ export class CreateBin {
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = `bin-qrcode.png`;
+        const tag = this.newBin.binTag ? this.newBin.binTag.replace(/[^a-zA-Z0-9_-]/g, '_') : 'bin';
+        a.download = `${tag}-qrcode.png`;
         document.body.appendChild(a);
         a.click();
 

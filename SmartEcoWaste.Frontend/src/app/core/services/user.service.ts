@@ -16,17 +16,14 @@ export class UserService {
     constructor(private http: HttpClient) {}
 
     createUser(user: CreateUserDto): Observable<any> {
-        console.log(user);
         return this.http.post<any>(`${apiUrl}/create-user`, user);
     }
 
     UpdateRole(role: UpdateRoleDto): Observable<any> {
-        console.log(role);
         return this.http.post<any>(`${apiUrl}/assign-role`, role);
     }
 
     updateUserPassword(user: UpdatePasswordDto): Observable<any> {
-        console.log(user);
         return this.http.put<any>(`${apiUrl}/update-user-password`, user);
     }
 
@@ -46,3 +43,4 @@ export class UserService {
         return this.http.get<any>(`${apiUrl}/get-roles`);
     }
 }
+

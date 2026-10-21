@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using SmartEcoWaste.Infrastructure.DbContexts;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -13,19 +15,33 @@ namespace SmartEcoWaste.Infrastructure.MultiTenancy
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context, ITenantContextAccessor accessor)
+        public async Task InvokeAsync(HttpContext context, ITenantContextAccessor accessor, SmartEcoWasteDbContext dbContext)
         {
-            // 1. Check if user is NOT authenticated
+            // 1. Unauthenticated requests:
+            // Fail-closed. Unauthenticated requests must NEVER become SuperAdmin.
+            // Under no circumstances does an unauthenticated caller receive cross-tenant access.
             if (!context.User.Identity?.IsAuthenticated ?? true)
             {
-                // Fallback: check optional X-Tenant-Id header for public registrations or pre-login queries
-                if (context.Request.Headers.TryGetValue("X-Tenant-Id", out var publicHeaderTenantId) &&
-                    int.TryParse(publicHeaderTenantId, out var parsedPublicTenantId))
+                accessor.SetTenant(0, false);
+                await _next(context);
+                return;
+            }
+
+            // 2. Authenticated requests:
+            // SuperAdmin access is granted ONLY to an explicitly authenticated user with the SuperAdmin role.
+            var isSuperAdmin = context.User.IsInRole("SuperAdmin");
+
+            if (isSuperAdmin)
+            {
+                // Platform administrators may optionally narrow their view to a specific tenant via X-Tenant-Id
+                if (context.Request.Headers.TryGetValue("X-Tenant-Id", out var targetHeader) &&
+                    int.TryParse(targetHeader, out var targetTenantId) && targetTenantId > 0)
                 {
-                    accessor.SetTenant(parsedPublicTenantId, false);
+                    accessor.SetTenant(targetTenantId, true);
                 }
                 else
                 {
+                    // Global system administrator context
                     accessor.SetTenant(0, true);
                 }
 
@@ -33,29 +49,40 @@ namespace SmartEcoWaste.Infrastructure.MultiTenancy
                 return;
             }
 
-            // 2. User IS authenticated
-            var isSuperAdmin = context.User.IsInRole("SuperAdmin");
+            // Regular authenticated users: Tenant MUST come from validated JWT claims
             var tenantIdClaim = context.User.FindFirst("TenantId");
-
-            if (tenantIdClaim != null && int.TryParse(tenantIdClaim.Value, out var tenantIdFromClaim))
+            if (tenantIdClaim == null || !int.TryParse(tenantIdClaim.Value, out var tenantIdFromClaim) || tenantIdFromClaim <= 0)
             {
-                accessor.SetTenant(tenantIdFromClaim, isSuperAdmin);
-                await _next(context);
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync("{\"isSuccess\":false,\"message\":\"Authentication token is missing a valid TenantId claim. Please re-authenticate.\"}");
                 return;
             }
 
-            // If token is missing TenantId claim (e.g. older JWT stored in browser localStorage):
-            // Check X-Tenant-Id request header
-            if (context.Request.Headers.TryGetValue("X-Tenant-Id", out var headerTenantId) &&
-                int.TryParse(headerTenantId, out var parsedHeaderTenantId) && parsedHeaderTenantId > 0)
+            // Prevent header spoofing: If an X-Tenant-Id header is sent, verify it matches the user's assigned TenantId claim
+            if (context.Request.Headers.TryGetValue("X-Tenant-Id", out var suppliedHeader) &&
+                int.TryParse(suppliedHeader, out var suppliedTenantId) &&
+                suppliedTenantId > 0 &&
+                suppliedTenantId != tenantIdFromClaim)
             {
-                accessor.SetTenant(parsedHeaderTenantId, isSuperAdmin);
-                await _next(context);
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync("{\"isSuccess\":false,\"message\":\"Cross-tenant access forbidden. You cannot access an organization other than your assigned tenant.\"}");
                 return;
             }
 
-            // Default safe fallback to workspace 1 (Commercial Mall) instead of crashing with SecurityException
-            accessor.SetTenant(1, isSuperAdmin);
+            // Verify that the assigned tenant exists and is active
+            var tenant = await dbContext.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tenantIdFromClaim);
+            if (tenant == null || !tenant.IsActive)
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync("{\"isSuccess\":false,\"message\":\"Assigned organization does not exist or has been deactivated.\"}");
+                return;
+            }
+
+            // Set verified tenant context
+            accessor.SetTenant(tenantIdFromClaim, false);
             await _next(context);
         }
     }

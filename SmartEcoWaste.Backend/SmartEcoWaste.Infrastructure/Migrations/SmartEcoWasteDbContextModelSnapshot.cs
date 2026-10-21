@@ -22,6 +22,60 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("longtext");
+
+                    b.Property<int?>("EntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UserEmail")
+                        .HasColumnType("longtext");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("TenantId", "Action");
+
+                    b.HasIndex("TenantId", "CreatedAt");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("SmartEcoWaste.Data.Entities.Bin", b =>
                 {
                     b.Property<int>("Id")
@@ -35,7 +89,7 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
                     b.Property<string>("BinTag")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<double>("CapacityLiters")
                         .HasColumnType("double");
@@ -73,9 +127,12 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
-
                     b.HasIndex("WasteZoneId");
+
+                    b.HasIndex("TenantId", "BinTag")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Status");
 
                     b.ToTable("Bins");
                 });
@@ -152,7 +209,7 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
                     b.HasIndex("InspectorUserId");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("TenantId", "CreatedAt");
 
                     b.ToTable("BinInspectionLogs");
                 });
@@ -254,7 +311,9 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
                     b.HasIndex("BinId");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("TenantId", "DueDate");
+
+                    b.HasIndex("TenantId", "Status");
 
                     b.ToTable("CollectionTasks");
                 });
@@ -272,7 +331,7 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
@@ -301,7 +360,8 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
 
                     b.ToTable("Properties");
                 });
@@ -326,6 +386,9 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.Property<int>("ShopId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -333,6 +396,10 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Redemptions");
                 });
@@ -354,6 +421,9 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("longtext");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -363,7 +433,7 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UserId")
+                    b.Property<int?>("UserId")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("VerifiedAt")
@@ -376,11 +446,11 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
                     b.HasIndex("BinId");
 
-                    b.HasIndex("TenantId");
-
                     b.HasIndex("UserId");
 
                     b.HasIndex("VerifiedBy");
+
+                    b.HasIndex("TenantId", "Status");
 
                     b.ToTable("Reports");
                 });
@@ -523,6 +593,9 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.Property<int>("Points")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -530,6 +603,8 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserId");
 
@@ -581,6 +656,23 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("WasteZones");
+                });
+
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.AuditLog", b =>
+                {
+                    b.HasOne("SmartEcoWaste.Data.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SmartEcoWaste.Data.Entities.Bin", b =>
@@ -690,6 +782,25 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("SmartEcoWaste.Data.Entities.Redemption", b =>
+                {
+                    b.HasOne("SmartEcoWaste.Data.Entities.Tenant", "Tenant")
+                        .WithMany("Redemptions")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartEcoWaste.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SmartEcoWaste.Data.Entities.Report", b =>
                 {
                     b.HasOne("SmartEcoWaste.Data.Entities.Bin", "Bin")
@@ -707,8 +818,7 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                     b.HasOne("SmartEcoWaste.Data.Entities.User", "User")
                         .WithMany("UserReports")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("SmartEcoWaste.Data.Entities.User", "VerifyByUser")
                         .WithMany()
@@ -745,11 +855,19 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
             modelBuilder.Entity("SmartEcoWaste.Data.Entities.UserPoints", b =>
                 {
+                    b.HasOne("SmartEcoWaste.Data.Entities.Tenant", "Tenant")
+                        .WithMany("UserPoints")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("SmartEcoWaste.Data.Entities.User", "User")
                         .WithMany("Points")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Tenant");
 
                     b.Navigation("User");
                 });
@@ -812,9 +930,13 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
                     b.Navigation("Properties");
 
+                    b.Navigation("Redemptions");
+
                     b.Navigation("Reports");
 
                     b.Navigation("Tasks");
+
+                    b.Navigation("UserPoints");
 
                     b.Navigation("Users");
 

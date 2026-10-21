@@ -128,7 +128,7 @@ export class ManageUsers {
             .getAllRoles()
             .pipe(
                 tap((res) => {
-                    ((this.roles = res.data), console.log('roles:', res));
+                    this.roles = res.data;
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -141,7 +141,6 @@ export class ManageUsers {
     }
 
     updateRole(user: User) {
-        console.log(user.role);
         this.selectedRole = user.role;
         this.selectedUser.userId = user.id;
         this.updateUserDialog = true;
@@ -170,7 +169,6 @@ export class ManageUsers {
     }
 
     deleteUser(id: number) {
-        console.log(id);
         this.confirmationService.confirm({
             message: `Are you sure you want to delete this user?`,
             header: 'Confirm',
@@ -211,3 +209,5 @@ export class ManageUsers {
         this.updateUserDialog = false;
     }
 }
+
+

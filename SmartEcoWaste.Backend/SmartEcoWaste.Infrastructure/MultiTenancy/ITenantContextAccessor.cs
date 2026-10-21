@@ -4,5 +4,6 @@ namespace SmartEcoWaste.Infrastructure.MultiTenancy
     {
         ITenantContext Tenant { get; }
         void SetTenant(int tenantId, bool isSuperAdmin);
+        void SetSystemContext();
     }
 }

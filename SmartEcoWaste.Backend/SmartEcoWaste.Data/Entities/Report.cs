@@ -9,8 +9,9 @@ namespace SmartEcoWaste.Data.Entities
     {
         public int TenantId { get; set; }
         public int BinId { get; set; }
-        public int UserId { get; set; }
-        public Status Status { get; set; } = Status.Full;
+        public int? UserId { get; set; } // Nullable: supports anonymous (public citizen) reports
+        public ReportStatus Status { get; set; } = ReportStatus.Submitted;
+        public string? RejectionReason { get; set; }
         public DateTime? VerifiedAt { get; set; }
         public int? VerifiedBy { get; set; }
 
