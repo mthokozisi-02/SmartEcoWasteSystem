@@ -1,6 +1,6 @@
 import { UserService } from '@/core/services/user.service';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -57,20 +57,23 @@ import { User } from 'src/assets/interfaces/user';
     styleUrl: './manage-users.scss',
     providers: [MessageService, ConfirmationService]
 })
-export class ManageUsers {
+export class ManageUsers implements OnInit {
     users = signal<User[]>([]);
+    candidateUsers = signal<any[]>([]);
 
     roles: Roles[] = [];
     selectedRole: Roles = {} as Roles;
-
     selectedUser: UpdateRoleDto = {} as UpdateRoleDto;
 
     submitted: boolean = false;
-
-    private destroyRef = inject(DestroyRef);
-
     isLoading = false;
     updateUserDialog = false;
+
+    // Add Existing User as Staff Dialog
+    addStaffDialog = false;
+    selectedCandidateUser: any = null;
+
+    private destroyRef = inject(DestroyRef);
 
     private showSuccess(message: string) {
         this.messageService.add({
@@ -109,7 +112,8 @@ export class ManageUsers {
             .getAll()
             .pipe(
                 tap((res) => {
-                    (this.users.set(res.data), this.getAllRoles());
+                    this.users.set(res.data || []);
+                    this.getAllRoles();
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -140,6 +144,73 @@ export class ManageUsers {
             .subscribe();
     }
 
+    openAddStaffDialog() {
+        const available = this.users()
+            .filter((u: any) => u.roleName !== 'Staff' && u.roleName !== 'Admin')
+            .map((u: any) => ({
+                id: u.id,
+                name: u.name,
+                email: u.email,
+                roleName: u.roleName,
+                tenantName: u.tenantName,
+                displayName: `${u.name} (${u.email}) [${u.tenantName || 'Tenant #' + u.tenantId}]`
+            }));
+        this.candidateUsers.set(available);
+        this.selectedCandidateUser = null;
+        this.addStaffDialog = true;
+    }
+
+    saveAddStaff() {
+        if (!this.selectedCandidateUser) {
+            this.showError({ message: 'Please select an existing user to promote to Staff.' });
+            return;
+        }
+
+        this.isLoading = true;
+        this.userService
+            .makeStaff(this.selectedCandidateUser.id)
+            .pipe(
+                tap((res) => {
+                    this.showSuccess(res.message || 'User successfully promoted to Staff.');
+                    this.addStaffDialog = false;
+                    this.loadUsers();
+                }),
+                catchError((err) => {
+                    this.showError(err);
+                    return [];
+                }),
+                finalize(() => (this.isLoading = false)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
+    }
+
+    promoteToStaff(user: User) {
+        this.confirmationService.confirm({
+            message: `Are you sure you want to add '${user.name}' as Staff? They will be able to log in and receive assigned bin collection tasks.`,
+            header: 'Add User as Staff',
+            icon: 'pi pi-user-plus',
+            accept: () => {
+                this.isLoading = true;
+                this.userService
+                    .makeStaff(user.id)
+                    .pipe(
+                        tap((res) => {
+                            this.showSuccess(res.message || `'${user.name}' has been added as Staff.`);
+                            this.loadUsers();
+                        }),
+                        catchError((err) => {
+                            this.showError(err);
+                            return [];
+                        }),
+                        finalize(() => (this.isLoading = false)),
+                        takeUntilDestroyed(this.destroyRef)
+                    )
+                    .subscribe();
+            }
+        });
+    }
+
     updateRole(user: User) {
         this.selectedRole = user.role;
         this.selectedUser.userId = user.id;
@@ -154,7 +225,7 @@ export class ManageUsers {
             .UpdateRole(this.selectedUser)
             .pipe(
                 tap(() => {
-                    this.showSuccess('User updated successfully');
+                    this.showSuccess('User role updated successfully');
                     this.updateUserDialog = false;
                     this.loadUsers();
                 }),
@@ -201,13 +272,25 @@ export class ManageUsers {
         else return 'success';
     }
 
+    getRoleSeverity(roleName: string): string {
+        switch (roleName?.toLowerCase()) {
+            case 'admin':
+                return 'danger';
+            case 'staff':
+                return 'success';
+            case 'supervisor':
+                return 'warn';
+            default:
+                return 'info';
+        }
+    }
+
     onGlobalFilter(table: Table, event: Event) {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
     }
 
     hideDialog() {
         this.updateUserDialog = false;
+        this.addStaffDialog = false;
     }
 }
-
-

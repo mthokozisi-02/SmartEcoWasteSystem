@@ -23,6 +23,10 @@ export class UserService {
         return this.http.post<any>(`${apiUrl}/assign-role`, role);
     }
 
+    makeStaff(userId: number): Observable<any> {
+        return this.http.post<any>(`${apiUrl}/users/${userId}/make-staff`, {});
+    }
+
     updateUserPassword(user: UpdatePasswordDto): Observable<any> {
         return this.http.put<any>(`${apiUrl}/update-user-password`, user);
     }
@@ -43,4 +47,3 @@ export class UserService {
         return this.http.get<any>(`${apiUrl}/get-roles`);
     }
 }
-

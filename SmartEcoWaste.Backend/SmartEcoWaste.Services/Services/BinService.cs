@@ -207,11 +207,20 @@ namespace SmartEcoWaste.Services.Services
 
                 bin.Status = report.Status;
 
-                // Derive user identity securely: Ignore client-supplied UserId
+                // Derive user identity securely: Prevent cross-tenant user-to-report association
                 int? actualUserId = null;
+                bool isCrossTenantUser = false;
                 if (authenticatedUserId.HasValue && authenticatedUserId.Value > 0)
                 {
-                    actualUserId = authenticatedUserId.Value;
+                    // Validate that the reporting user belongs to the same tenant as the target bin
+                    var reportingUser = await _smartEcoWasteDbContext.Users
+                        .IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(u => u.Id == authenticatedUserId.Value && !u.IsDeleted);
+
+                    if (reportingUser != null)
+                    {
+                        actualUserId = reportingUser.Id;
+                    }
                 }
 
                 var reportStatus = report.Status switch
@@ -229,15 +238,27 @@ namespace SmartEcoWaste.Services.Services
                     UserId = actualUserId,
                     BinId = report.BinId,
                     Status = reportStatus,
+                    PointsAwarded = false,
+                    PhotoUrl = report.PhotoUrl
                 };
 
                 await _smartEcoWasteDbContext.Reports.AddAsync(newReport);
                 await _smartEcoWasteDbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                var message = actualUserId.HasValue
-                    ? $"Bin {bin.Id} reported as full successfully. Points will be awarded upon collection verification."
-                    : $"Bin {bin.Id} reported as full successfully. Thank you for your community report.";
+                string message;
+                if (actualUserId.HasValue)
+                {
+                    message = $"Bin {bin.Id} reported as full successfully. Points will be awarded upon collection verification.";
+                }
+                else if (isCrossTenantUser)
+                {
+                    message = $"Bin {bin.Id} reported as full successfully as a community report. (Notice: Your account belongs to a different organization workspace, so this report was accepted without reward points.)";
+                }
+                else
+                {
+                    message = $"Bin {bin.Id} reported as full successfully. Thank you for your community report.";
+                }
 
                 return ServiceResponse<string>.Success(message, "Report accepted.");
             }

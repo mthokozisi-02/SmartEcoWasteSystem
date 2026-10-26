@@ -73,6 +73,7 @@ export interface ResponseCollectionTaskDto {
     startedAt?: string;
     completedAt?: string;
     dueDate: string;
+    photoProofUrl?: string;
 }
 
 export interface CreateCollectionTaskDto {

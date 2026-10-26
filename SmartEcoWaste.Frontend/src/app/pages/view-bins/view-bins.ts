@@ -1,6 +1,6 @@
 import { BinService } from '@/core/services/bin.service';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal, AfterViewInit, OnDestroy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
@@ -56,7 +56,7 @@ import { BinResponseDto } from 'src/assets/interfaces/bin-response-dto';
     styleUrl: './view-bins.scss',
     providers: [MessageService]
 })
-export class ViewBins {
+export class ViewBins implements AfterViewInit, OnDestroy {
     bins = signal<BinResponseDto[]>([]);
 
     map!: L.Map;
@@ -86,6 +86,14 @@ export class ViewBins {
     ) {}
 
     ngAfterViewInit(): void {
+        const container = L.DomUtil.get('map');
+        if (container != null) {
+            (container as any)._leaflet_id = null;
+        }
+        if (this.map) {
+            this.map.remove();
+        }
+
         this.map = L.map('map').setView([0, 0], 2); // temporary default
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -94,6 +102,12 @@ export class ViewBins {
 
         this.setUserLocation();
         this.loadBins();
+    }
+
+    ngOnDestroy(): void {
+        if (this.map) {
+            this.map.remove();
+        }
     }
 
     setUserLocation() {

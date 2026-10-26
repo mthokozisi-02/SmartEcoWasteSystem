@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SmartEcoWaste.Data.Entities;
 using SmartEcoWaste.Data.Enums;
 using SmartEcoWaste.Infrastructure.DbContexts;
+using SmartEcoWaste.Infrastructure.MultiTenancy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,8 +13,11 @@ namespace SmartEcoWaste.Infrastructure.Seeding
 {
     public static class DbSeeder
     {
-        public static async Task SeedAsync(SmartEcoWasteDbContext context)
+        public static async Task SeedAsync(SmartEcoWasteDbContext context, ITenantContextAccessor? tenantAccessor = null)
         {
+            // Explicitly establish system administrator context for database seeding workflow
+            tenantAccessor?.SetTenant(0, isSuperAdmin: true);
+
             await context.Database.MigrateAsync();
 
             // 1. Roles
@@ -22,9 +26,13 @@ namespace SmartEcoWaste.Infrastructure.Seeding
                 context.Roles.AddRange(
                     new Role { Name = "Admin" },
                     new Role { Name = "User" },
-                    new Role { Name = "Supervisor" },
-                    new Role { Name = "Contractor" }
+                    new Role { Name = "Staff" }
                 );
+                await context.SaveChangesAsync();
+            }
+            else if (!await context.Roles.AnyAsync(r => r.Name == "Staff"))
+            {
+                context.Roles.Add(new Role { Name = "Staff" });
                 await context.SaveChangesAsync();
             }
 

@@ -11,12 +11,15 @@ namespace SmartEcoWaste.Data.Dtos
     {
         public int Id { get; set; }
         public int BinId { get; set; }
-        public string BinArea { get; set; }
+        public string BinArea { get; set; } = string.Empty;
         public int UserId { get; set; }
-        public string UserName { get; set; }
+        public string UserName { get; set; } = string.Empty;
         public ReportStatus Status { get; set; } = ReportStatus.Submitted;
         public DateTime? VerifiedAt { get; set; }
         public DateTime? CreatedAt { get; set; }
         public string? VerifiedBy { get; set; }
+        public string? PhotoUrl { get; set; }
+        public int? AssignedTo { get; set; }
+        public string? AssignedUserName { get; set; }
     }
 }

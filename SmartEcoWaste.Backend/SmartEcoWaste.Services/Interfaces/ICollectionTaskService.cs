@@ -8,6 +8,7 @@ namespace SmartEcoWaste.Services.Interfaces
     public interface ICollectionTaskService
     {
         Task<ServiceResponse<ResponseCollectionTaskDto>> CreateTaskAsync(CreateCollectionTaskDto dto);
+        Task<ServiceResponse<ResponseCollectionTaskDto>> UpdateTaskAsync(int taskId, UpdateCollectionTaskDto dto);
         Task<ServiceResponse<List<ResponseCollectionTaskDto>>> GetAllTasksAsync();
         Task<ServiceResponse<List<ResponseCollectionTaskDto>>> GetMyAssignedTasksAsync(int userId);
         /// <summary>
@@ -20,5 +21,6 @@ namespace SmartEcoWaste.Services.Interfaces
         Task<ServiceResponse<ResponseInspectionLogDto>> SubmitInspectionAsync(int inspectorUserId, SubmitInspectionDto dto);
         Task<ServiceResponse<List<ResponseInspectionLogDto>>> GetInspectionLogsAsync(int? binId = null);
         Task<ServiceResponse<bool>> ApproveAnomalyAsync(int supervisorUserId, ApproveInspectionAnomalyDto dto);
+        Task<ServiceResponse<bool>> RejectAnomalyAsync(int supervisorUserId, RejectInspectionAnomalyDto dto);
     }
 }

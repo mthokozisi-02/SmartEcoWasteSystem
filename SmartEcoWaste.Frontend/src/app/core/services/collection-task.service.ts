@@ -21,6 +21,10 @@ export class CollectionTaskService {
         return this.http.post<any>(`${apiUrl}/create-task`, dto);
     }
 
+    updateTask(taskId: number, dto: any): Observable<any> {
+        return this.http.put<any>(`${apiUrl}/update-task/${taskId}`, dto);
+    }
+
     getAllTasks(): Observable<any> {
         return this.http.get<any>(`${apiUrl}/get-all-tasks`);
     }
@@ -46,6 +50,13 @@ export class CollectionTaskService {
         return this.http.post<any>(`${apiUrl}/approve-anomaly`, {
             inspectionLogId,
             resolutionNotes
+        });
+    }
+
+    rejectAnomaly(inspectionLogId: number, rejectionReason: string): Observable<any> {
+        return this.http.post<any>(`${apiUrl}/reject-anomaly`, {
+            inspectionLogId,
+            rejectionReason
         });
     }
 }

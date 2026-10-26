@@ -83,7 +83,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
                             <i class="fa-solid fa-triangle-exclamation"></i>
                         </div>
                     </div>
-                    <div class="text-3xl font-black text-gray-900 dark:text-white mb-2">2 <span class="text-base font-normal text-amber-600">Pending</span></div>
+                    <div class="text-3xl font-black text-gray-900 dark:text-white mb-2">{{ pendingReportsCount }} <span class="text-base font-normal text-amber-600">Pending</span></div>
                     <div class="text-xs text-gray-500 dark:text-gray-400">
                         <span>Avg resolution time: 24 mins</span>
                     </div>
@@ -251,6 +251,7 @@ export class EstateDashboard implements OnInit {
     tenantCode = '';
 
     recentReports: any[] = [];
+    pendingReportsCount = 0;
 
     private authService = inject(AuthService);
     private reportService = inject(ReportService);
@@ -265,15 +266,17 @@ export class EstateDashboard implements OnInit {
     loadReports() {
         this.reportService.getAll().subscribe({
             next: (res: any) => {
-                if (res && Array.isArray(res)) {
-                    this.recentReports = res.slice(0, 3);
+                const list = res.data || (Array.isArray(res) ? res : []);
+                if (Array.isArray(list)) {
+                    this.recentReports = list.slice(0, 5);
+                    this.pendingReportsCount = list.filter((r: any) =>
+                        r.status === 'Pending' || r.status === 0 || r.status === 'Overflowing'
+                    ).length;
                 }
             },
             error: () => {
-                this.recentReports = [
-                    { id: 1, binId: 3, userId: 14, status: 0, createdAt: new Date().toISOString() },
-                    { id: 2, binId: 5, userId: 22, status: 0, createdAt: new Date(Date.now() - 1800000).toISOString() }
-                ];
+                this.recentReports = [];
+                this.pendingReportsCount = 0;
             }
         });
     }

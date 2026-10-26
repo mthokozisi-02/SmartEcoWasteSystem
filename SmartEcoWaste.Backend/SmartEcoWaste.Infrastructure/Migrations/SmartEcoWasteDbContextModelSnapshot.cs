@@ -412,6 +412,9 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AssignedTo")
+                        .HasColumnType("int");
+
                     b.Property<int>("BinId")
                         .HasColumnType("int");
 
@@ -419,6 +422,12 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("PhotoUrl")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("PointsAwarded")
                         .HasColumnType("tinyint(1)");
 
                     b.Property<string>("RejectionReason")
@@ -443,6 +452,8 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AssignedTo");
 
                     b.HasIndex("BinId");
 
@@ -803,6 +814,11 @@ namespace SmartEcoWaste.Infrastructure.Migrations
 
             modelBuilder.Entity("SmartEcoWaste.Data.Entities.Report", b =>
                 {
+                    b.HasOne("SmartEcoWaste.Data.Entities.User", "AssignedUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedTo")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("SmartEcoWaste.Data.Entities.Bin", "Bin")
                         .WithMany()
                         .HasForeignKey("BinId")
@@ -824,6 +840,8 @@ namespace SmartEcoWaste.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("VerifiedBy")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AssignedUser");
 
                     b.Navigation("Bin");
 

@@ -1,105 +1,132 @@
-<div *ngIf="isLoading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center; z-index: 9999">
+<div *ngIf="isLoading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999">
     <p-progressSpinner></p-progressSpinner>
 </div>
 <p-toast></p-toast>
 <app-floating-configurator />
 
 <div class="flex items-center justify-center min-h-screen py-12 px-4 overflow-hidden relative"
-     style="background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(16,185,129,0.12) 0%, transparent 60%), linear-gradient(180deg, #050c09 0%, #080f0b 100%);">
-    <!-- Mesh Background Accents -->
-    <div class="absolute top-0 right-0 w-96 h-96 bg-green-400/10 rounded-full blur-3xl -z-10"></div>
-    <div class="absolute bottom-0 left-0 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl -z-10"></div>
+     style="background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 40%, #f8fafc 100%);">
+    <!-- Background Accents -->
+    <div class="absolute top-0 right-0 w-96 h-96 bg-emerald-100/50 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+    <div class="absolute bottom-0 left-0 w-96 h-96 bg-cyan-100/40 rounded-full blur-3xl -z-10 pointer-events-none"></div>
 
-    <div class="w-full max-w-md rounded-[32px] shadow-2xl p-8 z-10"
-         style="background: #0d1f17; border: 1px solid rgba(16,185,129,0.15); box-shadow: 0 40px 80px rgba(0,0,0,0.6);">
+    <div class="w-full max-w-md rounded-[32px] bg-white border border-slate-200 p-8 z-10"
+         style="box-shadow: 0 20px 45px -10px rgba(16, 185, 129, 0.12), 0 10px 25px -5px rgba(0, 0, 0, 0.04);">
         <!-- Logo & Branding -->
         <div class="text-center mb-8">
-            <a class="inline-flex items-center gap-2 no-underline mb-4" routerLink="/">
-                <div class="flex items-center justify-center w-8 h-8 rounded-lg"
-                     style="background: linear-gradient(135deg,#10b981,#059669); box-shadow: 0 0 14px rgba(16,185,129,0.35);">
-                    <span class="text-base">♻️</span>
+            <a class="inline-flex items-center gap-2 no-underline mb-3" routerLink="/">
+                <div class="flex items-center justify-center w-10 h-10 rounded-xl"
+                     style="background: linear-gradient(135deg,#10b981,#059669); box-shadow: 0 4px 14px rgba(16,185,129,0.35);">
+                    <span class="text-white text-base font-bold">♻️</span>
                 </div>
-                <span class="text-lg font-extrabold" style="background: linear-gradient(90deg,#10b981,#34d399); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">SmartEcoWaste</span>
+                <span class="text-xl font-extrabold text-slate-900">SmartEcoWaste</span>
             </a>
-            <h2 class="text-2xl font-extrabold" style="color: #f0fdf4;">Smart Bin Reporting</h2>
-            <p class="text-xs mt-1" style="color: rgba(209,250,229,0.45);">Check-in and update bin levels to clean up our community &amp; earn points.</p>
+            <h2 class="text-2xl font-extrabold text-slate-900 m-0">Smart Bin Reporting</h2>
+            <p class="text-xs text-slate-500 mt-1">Check-in and update bin levels to keep our community clean &amp; earn Eco-Points.</p>
         </div>
 
         <div *ngIf="bin" class="flex flex-col gap-6">
             <!-- Bin Info Header Card -->
-            <div class="rounded-2xl p-4 flex flex-col gap-3"
-                 style="background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2);">
+            <div class="rounded-2xl p-4 flex flex-col gap-2 bg-emerald-50/70 border border-emerald-200">
                 <div class="flex justify-between items-center">
-                    <span class="font-bold text-base" style="color: #d1fae5;">Smart Bin #{{ bin.id }}</span>
+                    <span class="font-bold text-base text-emerald-950">Smart Bin #{{ bin.id }}</span>
                     <p-tag [value]="bin.status" [severity]="getSeverity(bin.status)" />
                 </div>
-                <div class="flex items-start gap-2 text-sm" style="color: rgba(209,250,229,0.6);">
-                    <span class="text-lg leading-none shrink-0 mt-0.5">📍</span>
+                <div class="flex items-start gap-2 text-sm text-slate-600">
+                    <span class="text-base leading-none shrink-0 mt-0.5">📍</span>
                     <span>{{ trimToThirdComma(bin.area) }}</span>
                 </div>
             </div>
 
             <!-- Mini Map Location -->
-            <div class="relative w-full rounded-2xl overflow-hidden" style="border: 1px solid rgba(16,185,129,0.2); box-shadow: 0 8px 30px rgba(0,0,0,0.4);">
+            <div class="relative w-full rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
                 <div id="report-map" style="height: 200px; z-index: 10;"></div>
             </div>
 
             <!-- Status Level Selection -->
             <div>
-                <span class="block font-bold text-sm mb-3" style="color: #d1fae5;">Select Current Bin Level:</span>
-                <div class="grid grid-cols-2 gap-4">
+                <span class="block font-bold text-sm mb-3 text-slate-800">Select Current Bin Level:</span>
+                <div class="grid grid-cols-2 gap-3">
                     <!-- Emptied -->
                     <div (click)="selectStatus('Emptied')"
                          class="flex flex-col items-center justify-center p-4 rounded-2xl cursor-pointer transition-all duration-200"
-                         [style]="newReport.status === 'Emptied' ? 'border: 2px solid #10b981; background: rgba(16,185,129,0.1); color: #34d399;' : 'border: 1px solid rgba(16,185,129,0.15); background: rgba(16,185,129,0.03); color: rgba(209,250,229,0.5);'">
+                         [style]="newReport.status === 'Emptied' ? 'border: 2px solid #10b981; background: #ecfdf5; color: #047857;' : 'border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b;'">
                         <span class="text-2xl mb-1">🟢</span>
-                        <span class="text-xs font-semibold">Emptied / Free</span>
+                        <span class="text-xs font-bold">Emptied / Free</span>
                     </div>
 
                     <!-- Full -->
                     <div (click)="selectStatus('Full')"
                          class="flex flex-col items-center justify-center p-4 rounded-2xl cursor-pointer transition-all duration-200"
-                         [style]="newReport.status === 'Full' ? 'border: 2px solid #f59e0b; background: rgba(245,158,11,0.1); color: #fbbf24;' : 'border: 1px solid rgba(245,158,11,0.15); background: rgba(245,158,11,0.03); color: rgba(209,250,229,0.5);'">
+                         [style]="newReport.status === 'Full' ? 'border: 2px solid #f59e0b; background: #fffbeb; color: #b45309;' : 'border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b;'">
                         <span class="text-2xl mb-1">🟡</span>
-                        <span class="text-xs font-semibold">Full / Ready</span>
+                        <span class="text-xs font-bold">Full / Ready</span>
                     </div>
 
                     <!-- Overflowing -->
                     <div (click)="selectStatus('Overflowing')"
                          class="flex flex-col items-center justify-center p-4 rounded-2xl cursor-pointer transition-all duration-200"
-                         [style]="newReport.status === 'Overflowing' ? 'border: 2px solid #ef4444; background: rgba(239,68,68,0.1); color: #f87171;' : 'border: 1px solid rgba(239,68,68,0.15); background: rgba(239,68,68,0.03); color: rgba(209,250,229,0.5);'">
+                         [style]="newReport.status === 'Overflowing' ? 'border: 2px solid #ef4444; background: #fef2f2; color: #b91c1c;' : 'border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b;'">
                         <span class="text-2xl mb-1">🔴</span>
-                        <span class="text-xs font-semibold">Overflowing</span>
+                        <span class="text-xs font-bold">Overflowing</span>
                     </div>
 
                     <!-- Damaged -->
                     <div (click)="selectStatus('Damaged')"
                          class="flex flex-col items-center justify-center p-4 rounded-2xl cursor-pointer transition-all duration-200"
-                         [style]="newReport.status === 'Damaged' ? 'border: 2px solid #6b7280; background: rgba(107,114,128,0.1); color: #9ca3af;' : 'border: 1px solid rgba(107,114,128,0.15); background: rgba(107,114,128,0.03); color: rgba(209,250,229,0.5);'">
+                         [style]="newReport.status === 'Damaged' ? 'border: 2px solid #64748b; background: #f1f5f9; color: #334155;' : 'border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b;'">
                         <span class="text-2xl mb-1">⚙️</span>
-                        <span class="text-xs font-semibold">Damaged</span>
+                        <span class="text-xs font-bold">Damaged</span>
                     </div>
                 </div>
             </div>
 
+            <!-- Photo Upload / Attachment Section (Camera / File Only) -->
+            <div class="rounded-2xl p-4 flex flex-col gap-3 bg-slate-50 border border-slate-200">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-sm text-slate-800">
+                        <i class="pi pi-camera mr-1 text-emerald-600"></i> Add Photo Proof (Optional)
+                    </span>
+                    <span class="text-xs text-slate-500">Helps fast verification</span>
+                </div>
+
+                <!-- Preview if photo selected -->
+                <div *ngIf="photoPreviewUrl" class="relative rounded-xl overflow-hidden mt-1 border border-slate-200"
+                     style="max-height: 220px;">
+                    <img [src]="photoPreviewUrl" alt="Bin photo preview" class="w-full object-cover rounded-xl" style="max-height: 220px;" />
+                    <button type="button" (click)="removePhoto()"
+                            class="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center border-none cursor-pointer shadow-lg transition-colors">
+                        <i class="pi pi-times text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- File chooser buttons if no preview -->
+                <div *ngIf="!photoPreviewUrl" class="flex flex-col gap-2 mt-1">
+                    <input type="file" #photoInput (change)="onFileSelected($event)" accept="image/*" class="hidden" />
+
+                    <button type="button" (click)="photoInput.click()" pButton pRipple
+                            class="w-full py-3 rounded-xl border border-dashed flex items-center justify-center gap-2 bg-emerald-50/60 border-emerald-300 text-emerald-700 hover:bg-emerald-100 transition-colors">
+                        <i class="pi pi-camera text-lg text-emerald-600"></i>
+                        <span class="text-sm font-semibold">Take or Select Photo</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Action buttons -->
-            <div class="mt-4 flex flex-col gap-2">
+            <div class="mt-2 flex flex-col gap-2">
                 <button pButton pRipple label="Submit Level Report" (click)="reportBin()"
-                        class="w-full font-bold py-3.5 rounded-xl border-none text-base"
+                        class="w-full font-bold py-3.5 rounded-xl border-none text-base shadow-md cursor-pointer"
                         style="background: linear-gradient(135deg,#10b981,#059669); color: white; box-shadow: 0 4px 20px rgba(16,185,129,0.35);"></button>
                 <button pButton pRipple label="Cancel & Go Home" routerLink="/landing"
-                        class="w-full font-semibold py-3 rounded-xl" [text]="true"
-                        style="color: rgba(209,250,229,0.5);"></button>
+                        class="w-full font-semibold py-3 rounded-xl" [text]="true"></button>
             </div>
         </div>
 
         <!-- Placeholder when bin is not loaded yet -->
         <div *ngIf="!bin && !isLoading" class="text-center py-8">
             <span class="text-4xl block mb-4">🔍</span>
-            <p class="text-sm font-semibold" style="color: #d1fae5;">Unable to locate bin details.</p>
-            <p class="text-xs mt-1" style="color: rgba(209,250,229,0.4);">Please check the scanned QR code and try again.</p>
-            <button pButton pRipple label="Go Back Home" routerLink="/landing" class="mt-6 px-6 py-2.5 rounded-xl"
-                    style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #34d399;"></button>
+            <p class="text-sm font-semibold text-slate-800">Unable to locate bin details.</p>
+            <p class="text-xs text-slate-500 mt-1">Please check the scanned QR code and try again.</p>
         </div>
     </div>
 </div>

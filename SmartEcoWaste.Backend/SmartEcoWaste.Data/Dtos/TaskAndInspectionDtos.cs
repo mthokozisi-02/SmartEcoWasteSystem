@@ -15,6 +15,17 @@ namespace SmartEcoWaste.Data.Dtos
         public DateTime DueDate { get; set; }
     }
 
+    public class UpdateCollectionTaskDto
+    {
+        public string Title { get; set; } = null!;
+        public int BinId { get; set; }
+        public int? AssignedUserId { get; set; }
+        public string? ContractorName { get; set; }
+        public string? Instructions { get; set; }
+        public DateTime DueDate { get; set; }
+        public CollectionTaskStatus? Status { get; set; }
+    }
+
     public class ResponseCollectionTaskDto
     {
         public int Id { get; set; }
@@ -32,6 +43,7 @@ namespace SmartEcoWaste.Data.Dtos
         public DateTime? StartedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
         public DateTime DueDate { get; set; }
+        public string? PhotoProofUrl { get; set; }
     }
 
     public class SubmitInspectionDto
@@ -74,5 +86,11 @@ namespace SmartEcoWaste.Data.Dtos
     {
         public int InspectionLogId { get; set; }
         public string? ResolutionNotes { get; set; }
+    }
+
+    public class RejectInspectionAnomalyDto
+    {
+        public int InspectionLogId { get; set; }
+        public string? RejectionReason { get; set; }
     }
 }

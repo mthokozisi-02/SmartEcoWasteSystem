@@ -42,6 +42,13 @@ namespace SmartEcoWaste.Api.Controllers
         [HttpPost("create-user")]
         public async Task<IActionResult> CreateUser([FromBody] UserDto user)
         {
+            // If the creator is an authenticated admin/supervisor, bind new user strictly to caller's tenant
+            var authenticatedTenantId = GetCurrentTenantId();
+            if (authenticatedTenantId > 0 && !User.IsInRole("SuperAdmin"))
+            {
+                user.TenantId = authenticatedTenantId;
+            }
+
             var res = await _userService.CreateAsyc(user);
             return res.IsSuccess ? Ok(res) : BadRequest(res);
         }
@@ -61,6 +68,30 @@ namespace SmartEcoWaste.Api.Controllers
         {
             var res = await _userService.GetAllAsync();
             return res.IsSuccess ? Ok(res) : BadRequest(res);
+        }
+
+        [Authorize(Roles = "Admin,Supervisor")]
+        [HttpPost("users/{id}/make-staff")]
+        public async Task<IActionResult> MakeStaff(int id)
+        {
+            var adminId = GetCurrentUserId();
+            var res = await _userService.MakeStaffAsync(adminId, id);
+
+            if (res.IsSuccess)
+            {
+                await _auditLogService.LogAsync(
+                    GetCurrentTenantId(),
+                    adminId,
+                    GetCurrentUserEmail(),
+                    "MakeStaff",
+                    "User",
+                    id,
+                    $"User {id} promoted to Staff by admin {adminId}"
+                );
+                return Ok(res);
+            }
+
+            return BadRequest(res);
         }
 
         [Authorize(Roles = "Admin")]

@@ -1,6 +1,6 @@
 import { BinService } from '@/core/services/bin.service';
 import { PropertyService } from '@/core/services/property.service';
-import { Component, DestroyRef, inject, signal, ChangeDetectorRef, OnInit, AfterViewInit } from '@angular/core';
+import { Component, DestroyRef, inject, signal, ChangeDetectorRef, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FluidModule } from 'primeng/fluid';
 import { InputTextModule } from 'primeng/inputtext';
@@ -64,7 +64,7 @@ import {
     styleUrl: './create-bin.scss',
     providers: [MessageService, ConfirmationService]
 })
-export class CreateBin implements OnInit, AfterViewInit {
+export class CreateBin implements OnInit, AfterViewInit, OnDestroy {
     bins = signal<BinResponseDto[]>([]);
 
     map!: L.Map;
@@ -204,6 +204,14 @@ export class CreateBin implements OnInit, AfterViewInit {
     }
 
     ngAfterViewInit(): void {
+        const container = L.DomUtil.get('map');
+        if (container != null) {
+            (container as any)._leaflet_id = null;
+        }
+        if (this.map) {
+            this.map.remove();
+        }
+
         this.map = L.map('map').setView([0, 0], 2);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -235,6 +243,12 @@ export class CreateBin implements OnInit, AfterViewInit {
                 }
             });
         });
+    }
+
+    ngOnDestroy(): void {
+        if (this.map) {
+            this.map.remove();
+        }
     }
 
     setUserLocation() {

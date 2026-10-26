@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { TopbarWidget } from './components/topbarwidget.component';
 import { HeroWidget } from './components/herowidget';
@@ -8,6 +8,7 @@ import { LiveMapWidget } from './components/livemapwidget';
 import { RoadmapWidget } from './components/roadmapwidget';
 import { HighlightsWidget } from './components/highlightswidget';
 import { FooterWidget } from './components/footerwidget';
+import * as AOS from 'aos';
 
 @Component({
     selector: 'app-landing',
@@ -16,15 +17,15 @@ import { FooterWidget } from './components/footerwidget';
         RouterModule,
         TopbarWidget,
         HeroWidget,
-        FeaturesWidget,
         ImpactWidget,
+        FeaturesWidget,
         LiveMapWidget,
         RoadmapWidget,
         HighlightsWidget,
         FooterWidget,
     ],
     template: `
-        <div style="background: #050c09; min-height: 100vh;">
+        <div class="min-h-screen bg-slate-50 text-slate-900 selection:bg-emerald-500 selection:text-white">
             <div id="home">
                 <topbar-widget />
                 <hero-widget />
@@ -38,4 +39,20 @@ import { FooterWidget } from './components/footerwidget';
         </div>
     `
 })
-export class Landing {}
+export class Landing implements OnInit, AfterViewInit {
+    ngOnInit() {
+        AOS.init({
+            duration: 800,
+            easing: 'ease-out-cubic',
+            once: false,
+            mirror: true,
+            offset: 40
+        });
+    }
+
+    ngAfterViewInit() {
+        setTimeout(() => {
+            AOS.refresh();
+        }, 300);
+    }
+}

@@ -7,226 +7,275 @@ import { RouterModule } from '@angular/router';
     standalone: true,
     imports: [CommonModule, RouterModule],
     template: `
-        <section id="hero" class="relative min-h-screen flex flex-col justify-center overflow-hidden"
-                 style="background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(16,185,129,0.18) 0%, transparent 60%), linear-gradient(180deg, #050c09 0%, #080f0b 60%, #0a1a11 100%);">
+        <section id="hero" class="relative min-h-[90vh] flex flex-col justify-center overflow-hidden bg-gradient-to-b from-white via-emerald-50/20 to-slate-50 border-b border-slate-200/80">
 
-            <!-- Animated mesh grid background -->
-            <div class="absolute inset-0 pointer-events-none" style="background-image: linear-gradient(rgba(16,185,129,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.04) 1px, transparent 1px); background-size: 60px 60px;"></div>
+            <!-- Subtle Architectural Background Overlay -->
+            <div class="absolute inset-0 pointer-events-none opacity-10">
+                <img src="images/urban-buildings.jpg" alt="Urban Architecture" class="w-full h-full object-cover object-center scale-105 animate-subtle-pan" />
+            </div>
 
-            <!-- Floating glow orbs -->
-            <div class="absolute pointer-events-none" style="top: 15%; left: 8%; width: 380px; height: 380px; background: radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%); animation: floatOrb 8s ease-in-out infinite;"></div>
-            <div class="absolute pointer-events-none" style="top: 50%; right: 5%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(6,182,212,0.10) 0%, transparent 70%); animation: floatOrb 10s ease-in-out infinite reverse;"></div>
-            <div class="absolute pointer-events-none" style="bottom: 10%; left: 40%; width: 250px; height: 250px; background: radial-gradient(circle, rgba(52,211,153,0.08) 0%, transparent 70%); animation: floatOrb 12s ease-in-out infinite;"></div>
+            <!-- Soft Glowing Ambient Light Orbs -->
+            <div class="absolute pointer-events-none w-[600px] h-[600px] -top-32 -left-32 rounded-full bg-emerald-400/15 blur-[120px]"></div>
+            <div class="absolute pointer-events-none w-[500px] h-[500px] top-1/2 -right-24 rounded-full bg-teal-400/15 blur-[100px]"></div>
 
-            <div class="relative z-10 w-full px-8 lg:px-16 py-20 lg:py-28">
-                <div class="flex flex-col lg:flex-row items-center gap-16 lg:gap-20">
+            <!-- Subtle Grid Pattern -->
+            <div class="absolute inset-0 pointer-events-none opacity-40"
+                 style="background-image: radial-gradient(rgba(16,185,129,0.15) 1.5px, transparent 1.5px); background-size: 32px 32px;"></div>
 
-                    <!-- LEFT: Content -->
-                    <div class="w-full lg:w-6/12 flex flex-col items-start">
-
-                        <!-- Status badge -->
-                        <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-8 border text-xs font-semibold tracking-widest uppercase"
-                             style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.25); color: #34d399; animation: fadeInUp 0.6s ease both;">
-                            <span class="relative flex h-2 w-2">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background: #10b981;"></span>
-                                <span class="relative inline-flex rounded-full h-2 w-2" style="background: #10b981;"></span>
-                            </span>
-                            Smart City Initiative · Live Now
-                        </div>
-
-                        <!-- Headline -->
-                        <h1 class="text-6xl md:text-7xl lg:text-8xl font-extrabold leading-[1.05] mb-6 tracking-tight"
-                            style="animation: fadeInUp 0.7s ease 0.1s both; color: #f0fdf4;">
-                            Waste Management<br/>
-                            <span style="background: linear-gradient(90deg, #10b981 0%, #34d399 50%, #6ee7b7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Reimagined.</span>
-                        </h1>
-
-                        <!-- Subheadline -->
-                        <p class="text-base md:text-2xl font-normal leading-relaxed mb-10 max-w-xl"
-                           style="color: rgba(209,250,229,0.65); animation: fadeInUp 0.8s ease 0.2s both;">
-                            SmartEcoWaste connects IoT-enabled bins, QR-code reporting, and community incentives into a single intelligent platform — keeping cities cleaner, smarter, and greener.
-                        </p>
-
-                        <!-- CTA Buttons -->
-                        <div class="flex flex-wrap gap-4 mb-16" style="animation: fadeInUp 0.9s ease 0.3s both;">
-                            <a routerLink="/auth/sign-up"
-                               class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg no-underline transition-all duration-300"
-                               style="background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 8px 30px rgba(16,185,129,0.35);"
-                               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 40px rgba(16,185,129,0.45)'"
-                               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 30px rgba(16,185,129,0.35)'">
-                                <i class="pi pi-arrow-right"></i>
-                                Get Started Free
-                            </a>
-                            <a href="/landing#live-map-section"
-                               class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg no-underline transition-all duration-300 border"
-                               style="color: #34d399; border-color: rgba(52,211,153,0.3); background: rgba(16,185,129,0.06);"
-                               onmouseover="this.style.borderColor='rgba(52,211,153,0.6)'; this.style.background='rgba(16,185,129,0.12)'"
-                               onmouseout="this.style.borderColor='rgba(52,211,153,0.3)'; this.style.background='rgba(16,185,129,0.06)'">
-                                <i class="pi pi-map"></i>
-                                View Live Map
-                            </a>
-                        </div>
-
-                        <!-- Metrics Row -->
-                        <div class="flex flex-wrap gap-8" style="animation: fadeInUp 1s ease 0.4s both;">
-                            <div class="flex flex-col gap-0.5">
-                                <span class="text-4xl font-black" style="color: #10b981;">{{ displayBins }}+</span>
-                                <span class="text-sm font-bold uppercase tracking-wider" style="color: rgba(209,250,229,0.5);">Smart Bins</span>
-                            </div>
-                            <div class="w-px" style="background: rgba(16,185,129,0.2);"></div>
-                            <div class="flex flex-col gap-0.5">
-                                <span class="text-4xl font-black" style="color: #10b981;">{{ displayReports }}+</span>
-                                <span class="text-sm font-bold uppercase tracking-wider" style="color: rgba(209,250,229,0.5);">Reports Filed</span>
-                            </div>
-                            <div class="w-px" style="background: rgba(16,185,129,0.2);"></div>
-                            <div class="flex flex-col gap-0.5">
-                                <span class="text-4xl font-black" style="color: #10b981;">{{ displayPoints }}+</span>
-                                <span class="text-sm font-bold uppercase tracking-wider" style="color: rgba(209,250,229,0.5);">Eco Points Awarded</span>
-                            </div>
-                        </div>
+            <!-- Live Streaming Multi-Tenant Activity Marquee Banner -->
+            <div class="relative z-20 w-full overflow-hidden py-3 bg-white/80 border-b border-slate-200/80 backdrop-blur-md shadow-xs">
+                <div class="flex items-center gap-12 whitespace-nowrap animate-marquee">
+                    <div *ngFor="let item of tickerItems" class="inline-flex items-center gap-2.5 text-xs font-semibold text-slate-700">
+                        <span class="w-2.5 h-2.5 rounded-full animate-ping" [style.background]="item.dotColor"></span>
+                        <span class="font-extrabold text-slate-900">{{ item.tenant }}:</span>
+                        <span>{{ item.text }}</span>
+                        <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs" [style]="item.badgeStyle">{{ item.badge }}</span>
                     </div>
-
-                    <!-- RIGHT: Visual -->
-                    <div class="w-full lg:w-6/12 flex justify-center items-center relative" style="animation: fadeInUp 1s ease 0.2s both;">
-
-                        <!-- Outer glow ring -->
-                        <div class="absolute rounded-full pointer-events-none"
-                             style="width: 440px; height: 440px; background: radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%); animation: pulse 4s ease-in-out infinite;"></div>
-
-                        <!-- Central bin dashboard card -->
-                        <div class="relative rounded-[28px] p-1 z-10"
-                             style="background: linear-gradient(135deg, rgba(16,185,129,0.5) 0%, rgba(6,182,212,0.3) 50%, rgba(16,185,129,0.1) 100%); box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(16,185,129,0.15);">
-                            <div class="rounded-[24px] p-6 w-80" style="background: #0d1f17;">
-
-                                <!-- Card Header -->
-                                <div class="flex items-center justify-between mb-5">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-2.5 h-2.5 rounded-full animate-pulse" style="background: #10b981; box-shadow: 0 0 8px #10b981;"></div>
-                                        <span class="text-xs font-bold uppercase tracking-widest" style="color: rgba(209,250,229,0.6);">Live Dashboard</span>
-                                    </div>
-                                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background: rgba(16,185,129,0.15); color: #34d399;">Online</span>
-                                </div>
-
-                                <!-- Bin Status Grid -->
-                                <div class="grid grid-cols-2 gap-3 mb-5">
-                                    <div class="p-3 rounded-xl" style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15);">
-                                        <div class="text-xs mb-1" style="color: rgba(209,250,229,0.5);">Bin #001</div>
-                                        <div class="flex items-center gap-1.5">
-                                            <div class="w-2 h-2 rounded-full" style="background: #10b981;"></div>
-                                            <span class="text-xs font-bold" style="color: #10b981;">Emptied</span>
-                                        </div>
-                                        <div class="mt-2 w-full rounded-full overflow-hidden" style="height: 4px; background: rgba(255,255,255,0.08);">
-                                            <div class="h-full rounded-full" style="width: 15%; background: #10b981;"></div>
-                                        </div>
-                                    </div>
-                                    <div class="p-3 rounded-xl" style="background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15);">
-                                        <div class="text-xs mb-1" style="color: rgba(209,250,229,0.5);">Bin #002</div>
-                                        <div class="flex items-center gap-1.5">
-                                            <div class="w-2 h-2 rounded-full" style="background: #f59e0b;"></div>
-                                            <span class="text-xs font-bold" style="color: #f59e0b;">Full</span>
-                                        </div>
-                                        <div class="mt-2 w-full rounded-full overflow-hidden" style="height: 4px; background: rgba(255,255,255,0.08);">
-                                            <div class="h-full rounded-full" style="width: 90%; background: #f59e0b;"></div>
-                                        </div>
-                                    </div>
-                                    <div class="p-3 rounded-xl" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.15);">
-                                        <div class="text-xs mb-1" style="color: rgba(209,250,229,0.5);">Bin #003</div>
-                                        <div class="flex items-center gap-1.5">
-                                            <div class="w-2 h-2 rounded-full animate-ping" style="background: #ef4444;"></div>
-                                            <span class="text-xs font-bold" style="color: #ef4444;">Overflowing</span>
-                                        </div>
-                                        <div class="mt-2 w-full rounded-full overflow-hidden" style="height: 4px; background: rgba(255,255,255,0.08);">
-                                            <div class="h-full rounded-full" style="width: 100%; background: #ef4444;"></div>
-                                        </div>
-                                    </div>
-                                    <div class="p-3 rounded-xl" style="background: rgba(107,114,128,0.08); border: 1px solid rgba(107,114,128,0.15);">
-                                        <div class="text-xs mb-1" style="color: rgba(209,250,229,0.5);">Bin #004</div>
-                                        <div class="flex items-center gap-1.5">
-                                            <div class="w-2 h-2 rounded-full" style="background: #6b7280;"></div>
-                                            <span class="text-xs font-bold" style="color: #9ca3af;">Damaged</span>
-                                        </div>
-                                        <div class="mt-2 w-full rounded-full overflow-hidden" style="height: 4px; background: rgba(255,255,255,0.08);">
-                                            <div class="h-full rounded-full" style="width: 0%; background: #6b7280;"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- QR Scan row -->
-                                <div class="flex items-center gap-3 p-3 rounded-xl mb-4" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
-                                    <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.12);">
-                                        <i class="fa-solid fa-qrcode text-emerald-400 text-lg"></i>
-                                    </div>
-                                    <div>
-                                        <div class="text-xs font-semibold" style="color: #d1fae5;">QR Scan Detected</div>
-                                        <div class="text-[10px]" style="color: rgba(209,250,229,0.4);">Bin #003 · 2 min ago · Overflowing</div>
-                                    </div>
-                                    <div class="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full" style="background: rgba(239,68,68,0.15); color: #f87171;">Alert</div>
-                                </div>
-
-                                <!-- Eco Points earned -->
-                                <div class="flex items-center justify-between p-3 rounded-xl" style="background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,182,212,0.08)); border: 1px solid rgba(16,185,129,0.2);">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fa-solid fa-star text-amber-400 text-sm"></i>
-                                        <div>
-                                            <div class="text-[10px] font-semibold uppercase tracking-wider" style="color: rgba(209,250,229,0.5);">Your Eco Points</div>
-                                            <div class="text-sm font-black" style="color: #fbbf24;">1,240 pts</div>
-                                        </div>
-                                    </div>
-                                    <div class="text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1" style="background: rgba(251,191,36,0.12); color: #fbbf24;">Rank #3 <i class="fa-solid fa-trophy text-amber-500 text-xs"></i></div>
-                                </div>
-                            </div>
-                                           <!-- Floating notification card -->
-                        <div class="absolute top-0 right-0 lg:right-[-40px] p-3 rounded-2xl text-xs font-medium flex items-center gap-2.5"
-                             style="background: rgba(5,12,9,0.9); border: 1px solid rgba(16,185,129,0.2); backdrop-filter: blur(12px); color: #d1fae5; animation: floatBadge 6s ease-in-out infinite; box-shadow: 0 8px 30px rgba(0,0,0,0.4);">
-                            <span class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.15);"><i class="fa-solid fa-leaf text-emerald-400 text-sm"></i></span>
-                            <div>
-                                <div class="font-bold text-[11px]" style="color: #34d399;">+25 Eco Points</div>
-                                <div class="text-[10px]" style="color: rgba(209,250,229,0.5);">Report submitted!</div>
-                            </div>
-                        </div>
- 
-                        <!-- Floating dispatch card -->
-                        <div class="absolute bottom-4 left-0 lg:left-[-40px] p-3 rounded-2xl text-xs font-medium flex items-center gap-2.5"
-                             style="background: rgba(5,12,9,0.9); border: 1px solid rgba(6,182,212,0.2); backdrop-filter: blur(12px); color: #d1fae5; animation: floatBadge 7s ease-in-out infinite reverse; box-shadow: 0 8px 30px rgba(0,0,0,0.4);">
-                            <span class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background: rgba(6,182,212,0.15);"><i class="fa-solid fa-truck text-cyan-400 text-sm"></i></span>
-                            <div>
-                                <div class="font-bold text-[11px]" style="color: #67e8f9;">Dispatch Sent</div>
-                                <div class="text-[10px]" style="color: rgba(209,250,229,0.5);">ETA: 12 min</div>
-                            </div>
-                        </div>             </div>
+                    <!-- Duplicate for infinite marquee loop -->
+                    <div *ngFor="let item of tickerItems" class="inline-flex items-center gap-2.5 text-xs font-semibold text-slate-700">
+                        <span class="w-2.5 h-2.5 rounded-full animate-ping" [style.background]="item.dotColor"></span>
+                        <span class="font-extrabold text-slate-900">{{ item.tenant }}:</span>
+                        <span>{{ item.text }}</span>
+                        <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs" [style]="item.badgeStyle">{{ item.badge }}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Scroll hint -->
-            <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2" style="animation: fadeInUp 1.2s ease 0.6s both;">
-                <span class="text-xs font-medium uppercase tracking-widest" style="color: rgba(209,250,229,0.35);">Scroll to explore</span>
-                <div class="w-5 h-8 rounded-full border flex items-start justify-center pt-1.5" style="border-color: rgba(16,185,129,0.3);">
-                    <div class="w-1 h-2 rounded-full" style="background: #10b981; animation: scrollDot 1.8s ease-in-out infinite;"></div>
+            <!-- Main Hero Content (Wide 1600px, Minimal Side Padding!) -->
+            <div class="relative z-10 w-full px-4 sm:px-8 lg:px-12 py-12 lg:py-16 max-w-[1600px] mx-auto">
+                <div class="grid grid-cols-12 gap-8 lg:gap-12 items-center">
+
+                    <!-- LEFT: Headline & Value Proposition -->
+                    <div class="col-span-12 lg:col-span-7 flex flex-col items-start" data-aos="fade-right" data-aos-duration="800">
+
+                        <!-- Live Status Badge with Animated Radar Ping -->
+                        <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-6 border text-xs font-extrabold tracking-widest uppercase bg-emerald-50 border-emerald-200 text-emerald-800 shadow-xs">
+                            <span class="relative flex h-3 w-3">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
+                            </span>
+                            Commercial Multi-Tenant SaaS · Live Field Monitoring
+                        </div>
+
+                        <!-- Main Title -->
+                        <h1 class="text-5xl sm:text-6xl xl:text-7xl font-black leading-[1.06] mb-6 tracking-tight text-slate-900">
+                            Intelligent Waste <br/>
+                            <span class="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 bg-clip-text text-transparent">Operations & Audit.</span>
+                        </h1>
+
+                        <!-- Subtitle -->
+                        <p class="text-base sm:text-lg xl:text-xl font-normal leading-relaxed mb-8 max-w-2xl text-slate-600">
+                            The all-in-one ecosystem for shopping malls, residential estates, and municipal councils. Automating IoT fill detection, mobile camera photo proof, supervisory inspection approvals, and 100 Eco-Points citizen incentives.
+                        </p>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-wrap gap-4 mb-10 w-full sm:w-auto" data-aos="fade-up" data-aos-delay="200">
+                            <a routerLink="/auth/sign-up"
+                               class="group inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-black text-lg text-white no-underline shadow-xl shadow-emerald-600/25 hover:shadow-2xl hover:shadow-emerald-600/40 hover:scale-105 transition-all duration-300 relative overflow-hidden"
+                               style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <span class="relative z-10">Start Organization Free</span>
+                                <i class="pi pi-arrow-right text-sm group-hover:translate-x-1.5 transition-transform relative z-10"></i>
+                            </a>
+
+                            <a href="/landing#live-map-section"
+                               class="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl font-extrabold text-lg text-slate-800 bg-white border border-slate-300 hover:border-emerald-400 hover:bg-emerald-50/50 hover:text-emerald-700 shadow-sm transition-all duration-300">
+                                <i class="pi pi-map text-emerald-600 animate-bounce-slow"></i>
+                                <span>Explore Live IoT Map</span>
+                            </a>
+                        </div>
+
+                        <!-- Live Metrics Row -->
+                        <div class="grid grid-cols-3 gap-4 sm:gap-6 p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xl backdrop-blur-md w-full max-w-2xl"
+                             data-aos="fade-up" data-aos-delay="300">
+                            <div class="flex flex-col">
+                                <div class="text-3xl sm:text-4xl font-black text-emerald-600 flex items-center gap-1">
+                                    {{ displayBins }}+
+                                </div>
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Active Smart Bins</span>
+                            </div>
+                            <div class="flex flex-col border-l border-slate-200 pl-4 sm:pl-6">
+                                <div class="text-3xl sm:text-4xl font-black text-teal-600 flex items-center gap-1">
+                                    {{ displayReports }}+
+                                </div>
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Photo Proofs Audited</span>
+                            </div>
+                            <div class="flex flex-col border-l border-slate-200 pl-4 sm:pl-6">
+                                <div class="text-3xl sm:text-4xl font-black text-amber-500 flex items-center gap-1">
+                                    {{ displayPoints | number }}+
+                                </div>
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Eco-Points Awarded</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: Interactive Visual Operations Hub -->
+                    <div class="col-span-12 lg:col-span-5 relative" data-aos="fade-left" data-aos-duration="800">
+
+                        <!-- Central Glassmorphic Console Card -->
+                        <div class="relative z-10 rounded-3xl p-6 bg-white border border-slate-200 shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-500">
+
+                            <!-- Top Header with Tenant Selector Simulation -->
+                            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                                        <i class="fa-solid fa-city"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-extrabold text-slate-900">Commercial Mall Operations Hub</div>
+                                        <div class="text-[11px] text-emerald-700 font-mono font-bold">Workspace: MALL-WESTGATE-01 · Active</div>
+                                    </div>
+                                </div>
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span> Live Fleet
+                                </span>
+                            </div>
+
+                            <!-- Photographic Inspection Visual Card with Real Image -->
+                            <div class="relative rounded-2xl overflow-hidden mb-5 border border-slate-200 group">
+                                <img src="images/recycling-station.jpg" alt="Smart Bin Station" class="w-full h-48 object-cover object-center group-hover:scale-105 transition-transform duration-700" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+
+                                <!-- Viewfinder Overlays -->
+                                <div class="absolute top-2.5 left-2.5 text-[11px] font-mono px-2.5 py-0.5 rounded bg-black/70 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
+                                    GPS: 26.2041° S, 28.0473° E
+                                </div>
+                                <div class="absolute top-2.5 right-2.5 text-[11px] font-mono px-2.5 py-0.5 rounded bg-emerald-600 text-white flex items-center gap-1.5 shadow-md">
+                                    <i class="pi pi-camera"></i> Camera Verified
+                                </div>
+
+                                <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white">
+                                    <div>
+                                        <div class="text-sm font-extrabold">Bin #004 — Food Court Atrium</div>
+                                        <div class="text-xs text-emerald-300 font-medium">Field Operator: Alex K. · Camera Photo Stamped</div>
+                                    </div>
+                                    <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-500 text-white shadow-lg flex items-center gap-1 animate-pulse">
+                                        <i class="pi pi-check-circle"></i> Approved
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Real-time Bin Fill Level Bars -->
+                            <div class="space-y-3 mb-5">
+                                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                    <div class="flex justify-between text-xs font-bold mb-1.5">
+                                        <span class="flex items-center gap-2 text-slate-800">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                            Organic Waste Station #01
+                                        </span>
+                                        <span class="text-emerald-700 font-extrabold">18% · Optimal</span>
+                                    </div>
+                                    <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                                        <div class="h-full bg-emerald-500 rounded-full" style="width: 18%;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                    <div class="flex justify-between text-xs font-bold mb-1.5">
+                                        <span class="flex items-center gap-2 text-slate-800">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                            Plastics & Packaging #04
+                                        </span>
+                                        <span class="text-amber-700 font-extrabold">86% · Queued for Collection</span>
+                                    </div>
+                                    <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                                        <div class="h-full bg-amber-500 rounded-full" style="width: 86%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 100 Eco-Points Reward Card -->
+                            <div class="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 via-emerald-50 to-teal-50 border border-amber-300 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-lg shadow-md animate-wiggle">
+                                        ★
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] font-extrabold uppercase tracking-widest text-amber-800">Automated Gamification</div>
+                                        <div class="text-xs font-black text-slate-900">+100 Eco-Points Credited to Citizen</div>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-black px-3 py-1.5 rounded-xl bg-white text-amber-800 border border-amber-300 shadow-xs">
+                                    Rank #1 🏆
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Floating Live Verification Pill 1 -->
+                        <div class="absolute -top-5 -right-4 z-20 p-3.5 rounded-2xl bg-white border border-emerald-300 shadow-2xl flex items-center gap-3 animate-float-slow"
+                             data-aos="zoom-in" data-aos-delay="400">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg font-bold">
+                                <i class="fa-solid fa-camera"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-black text-slate-900">Camera Proof Attached</div>
+                                <div class="text-[10px] text-emerald-700 font-bold">100% Supervisory Sign-off</div>
+                            </div>
+                        </div>
+
+                        <!-- Floating Live Verification Pill 2 -->
+                        <div class="absolute -bottom-5 -left-4 z-20 p-3.5 rounded-2xl bg-white border border-teal-300 shadow-2xl flex items-center gap-3 animate-float-reverse"
+                             data-aos="zoom-in" data-aos-delay="500">
+                            <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center text-lg font-bold">
+                                <i class="fa-solid fa-truck-fast"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-black text-slate-900">Collection Dispatched</div>
+                                <div class="text-[10px] text-teal-700 font-bold">ETA: 6 Minutes · Route #3</div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
             <style>
-                @keyframes floatOrb {
-                    0%, 100% { transform: translate(0, 0) scale(1); }
-                    33% { transform: translate(20px, -30px) scale(1.05); }
-                    66% { transform: translate(-15px, 20px) scale(0.95); }
+                @keyframes marquee {
+                    0% { transform: translateX(0%); }
+                    100% { transform: translateX(-50%); }
                 }
-                @keyframes floatBadge {
-                    0%, 100% { transform: translateY(0); }
+                .animate-marquee {
+                    display: flex;
+                    width: max-content;
+                    animation: marquee 30s linear infinite;
+                }
+                .animate-marquee:hover {
+                    animation-play-state: paused;
+                }
+                @keyframes floatSlow {
+                    0%, 100% { transform: translateY(0px); }
                     50% { transform: translateY(-12px); }
                 }
-                @keyframes scrollDot {
-                    0%, 100% { transform: translateY(0); opacity: 1; }
-                    50% { transform: translateY(8px); opacity: 0.3; }
+                .animate-float-slow {
+                    animation: floatSlow 5s ease-in-out infinite;
                 }
-                @keyframes fadeInUp {
-                    from { opacity: 0; transform: translateY(24px); }
-                    to { opacity: 1; transform: translateY(0); }
+                @keyframes floatReverse {
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(12px); }
                 }
-                @keyframes pulse {
-                    0%, 100% { opacity: 0.6; transform: scale(1); }
-                    50% { opacity: 1; transform: scale(1.04); }
+                .animate-float-reverse {
+                    animation: floatReverse 6s ease-in-out infinite;
+                }
+                @keyframes subtlePan {
+                    0%, 100% { transform: scale(1.04) translate(0px, 0px); }
+                    50% { transform: scale(1.08) translate(-10px, -10px); }
+                }
+                .animate-subtle-pan {
+                    animation: subtlePan 25s ease-in-out infinite alternate;
+                }
+                @keyframes wiggle {
+                    0%, 100% { transform: rotate(0deg); }
+                    25% { transform: rotate(-10deg); }
+                    75% { transform: rotate(10deg); }
+                }
+                .animate-wiggle {
+                    animation: wiggle 2.5s ease-in-out infinite;
+                }
+                @keyframes bounceSlow {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-4px); }
+                }
+                .animate-bounce-slow {
+                    animation: bounceSlow 2s ease-in-out infinite;
                 }
             </style>
         </section>
@@ -238,9 +287,16 @@ export class HeroWidget implements OnInit, OnDestroy {
     displayPoints = 0;
     private interval: any;
 
+    tickerItems = [
+        { tenant: 'WESTGATE-MALL', text: 'Bin #014 [Food Court] emptied · Photo proof verified by supervisor', badge: 'Approved', dotColor: '#059669', badgeStyle: 'background: #d1fae5; color: #065f46;' },
+        { tenant: 'NORTH-ESTATE', text: 'Resident submitted QR overflow alert · +100 Eco-Points awarded', badge: '+100 Pts', dotColor: '#d97706', badgeStyle: 'background: #fef3c7; color: #92400e;' },
+        { tenant: 'METRO-CITY-COUNCIL', text: 'Truck Fleet #02 dispatched on dynamic route (8 bins queued)', badge: 'Dispatched', dotColor: '#0891b2', badgeStyle: 'background: #cffafe; color: #155e75;' },
+        { tenant: 'CENTRAL-PLAZA', text: 'Supervisory quality audit passed with zero anomaly flags', badge: '100% QA', dotColor: '#059669', badgeStyle: 'background: #d1fae5; color: #065f46;' },
+        { tenant: 'GREEN-VALLEY', text: 'Field Operator camera capture uploaded via mobile browser', badge: 'Photo Proof', dotColor: '#059669', badgeStyle: 'background: #d1fae5; color: #065f46;' }
+    ];
+
     ngOnInit() {
-        // Animated counter effect
-        const targets = { bins: 120, reports: 850, points: 24000 };
+        const targets = { bins: 154, reports: 980, points: 34200 };
         const duration = 2000;
         const steps = 60;
         const stepTime = duration / steps;
@@ -248,7 +304,7 @@ export class HeroWidget implements OnInit, OnDestroy {
         this.interval = setInterval(() => {
             step++;
             const progress = step / steps;
-            const ease = 1 - Math.pow(1 - progress, 3); // ease out cubic
+            const ease = 1 - Math.pow(1 - progress, 3);
             this.displayBins = Math.round(targets.bins * ease);
             this.displayReports = Math.round(targets.reports * ease);
             this.displayPoints = Math.round(targets.points * ease);

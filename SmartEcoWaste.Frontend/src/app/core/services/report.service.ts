@@ -27,5 +27,8 @@ export class ReportService {
     deleteReport(Id: number): Observable<any> {
         return this.http.delete<any>(`${apiUrl}/delete-report/${Id}`);
     }
-}
 
+    assignReport(reportId: number, staffId: number): Observable<any> {
+        return this.http.post<any>(`${apiUrl}/assign-report`, { reportId, staffId });
+    }
+}

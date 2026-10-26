@@ -10,4 +10,7 @@ export interface ReportResponseDto {
     verifiedAt: Date;
     createdAt: Date;
     verifiedBy: string;
+    photoUrl?: string;
+    assignedTo?: number;
+    assignedUserName?: string;
 }

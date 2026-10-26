@@ -263,16 +263,13 @@ export class MallDashboard implements OnInit {
         this.taskService.getAllTasks().subscribe({
             next: (res: any) => {
                 if (res.isSuccess && res.data) {
-                    this.activeTasks = res.data.slice(0, 4);
+                    this.activeTasks = res.data.slice(0, 5);
+                } else {
+                    this.activeTasks = [];
                 }
             },
             error: () => {
-                // Mock sample fallback if empty
-                this.activeTasks = [
-                    { id: 101, title: 'Food Court Level 2 Compactor Clear', contractorName: 'EcoClean Commercial Ltd', status: 'InProgress', scheduledAt: new Date().toISOString(), dueDate: new Date(Date.now() + 3600000).toISOString(), binId: 1 },
-                    { id: 102, title: 'Loading Dock B2 Cardboard Haulage', contractorName: 'EcoClean Commercial Ltd', status: 'Scheduled', scheduledAt: new Date().toISOString(), dueDate: new Date(Date.now() + 7200000).toISOString(), binId: 2 },
-                    { id: 103, title: 'East Pavilion Heavy Grease Trap Audit', contractorName: 'EnviroShield Pros', status: 'Scheduled', scheduledAt: new Date().toISOString(), dueDate: new Date(Date.now() + 10800000).toISOString(), binId: 3 }
-                ];
+                this.activeTasks = [];
             }
         });
     }

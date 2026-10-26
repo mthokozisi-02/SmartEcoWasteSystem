@@ -53,7 +53,20 @@ export class AppMenu implements OnInit {
                 items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }]
             },
             {
+                label: 'Citizen Services',
+                role: 'User',
+                items: [
+                    {
+                        label: 'Report Issue / Bin',
+                        icon: 'pi pi-fw pi-exclamation-triangle',
+                        routerLink: ['/pages/report-bin'],
+                        role: 'User'
+                    }
+                ]
+            },
+            {
                 label: 'Operations & Facilities',
+                role: 'Admin,Staff',
                 items: [
                     {
                         label: propertiesLabel,
@@ -64,11 +77,13 @@ export class AppMenu implements OnInit {
                     {
                         label: tasksLabel,
                         icon: 'pi pi-fw pi-check-square',
-                        routerLink: ['/pages/manage-tasks']
+                        routerLink: ['/pages/manage-tasks'],
+                        role: 'Admin,Staff'
                     },
                     {
                         label: 'Smart Bins',
                         icon: 'pi pi-fw pi-trash',
+                        role: 'Admin,Staff',
                         items: [
                             {
                                 label: 'Register Bin',
@@ -80,7 +95,7 @@ export class AppMenu implements OnInit {
                                 label: 'Manage Bins',
                                 icon: 'pi pi-fw pi-eye',
                                 routerLink: ['/pages/manage-bins'],
-                                role: 'Admin'
+                                role: 'Admin,Staff'
                             }
                         ]
                     },
@@ -103,6 +118,7 @@ export class AppMenu implements OnInit {
                     {
                         label: 'Staff & Roles',
                         icon: 'pi pi-fw pi-users',
+                        role: 'Admin',
                         items: [
                             {
                                 label: 'Add User',
@@ -140,10 +156,13 @@ export class AppMenu implements OnInit {
                 return item;
             })
             .filter((item) => {
+                if (item.items && item.items.length === 0) {
+                    return false;
+                }
                 if (item.role) {
                     const normalizedUserRole = (userRole || '').toLowerCase();
-                    const normalizedRequiredRole = item.role.toLowerCase();
-                    return normalizedUserRole.includes(normalizedRequiredRole) || normalizedUserRole.includes('superadmin');
+                    const allowedRoles = item.role.toLowerCase().split(',').map((r: string) => r.trim());
+                    return allowedRoles.includes(normalizedUserRole) || normalizedUserRole.includes('superadmin');
                 }
                 return true;
             });

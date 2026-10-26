@@ -1,5 +1,5 @@
 import { AppFloatingConfigurator } from '@/layout/component/app.floatingconfigurator';
-import { Component, DestroyRef, inject, OnInit, AfterViewInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -23,6 +23,7 @@ import { RatingModule } from 'primeng/rating';
 import { RippleModule } from 'primeng/ripple';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
+import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
@@ -34,12 +35,7 @@ import * as L from 'leaflet';
     selector: 'app-report-bin',
     standalone: true,
     imports: [
-        AppFloatingConfigurator,
-        ButtonModule,
-        RouterLink,
         CommonModule,
-        ProgressSpinnerModule,
-        TableModule,
         FormsModule,
         ButtonModule,
         RippleModule,
@@ -56,13 +52,18 @@ import * as L from 'leaflet';
         InputIconModule,
         IconFieldModule,
         ConfirmDialogModule,
+        TabsModule,
+        TableModule,
+        ProgressSpinnerModule,
+        RouterLink,
+        AppFloatingConfigurator,
         ImageModule
     ],
     templateUrl: './report-bin.html',
     styleUrl: './report-bin.scss',
     providers: [MessageService]
 })
-export class ReportBin implements OnInit {
+export class ReportBin implements OnInit, OnDestroy {
     binId!: number;
     bin: any = null;
     map!: L.Map;
@@ -72,6 +73,11 @@ export class ReportBin implements OnInit {
         // userId is intentionally omitted — derived from JWT on the backend
         status: StatusEnum.Full
     };
+
+    // Photo options
+    selectedPhotoFile: File | null = null;
+    photoPreviewUrl: string | null = null;
+    manualPhotoUrl: string = '';
 
     // Expose enum so the template can reference it
     StatusEnum = StatusEnum;
@@ -146,23 +152,75 @@ export class ReportBin implements OnInit {
     initializeMap() {
         setTimeout(() => {
             if (!this.bin) return;
-            
+
             // Set up map centered on bin coordinates
+            const container = L.DomUtil.get('report-map');
+            if (container != null) {
+                (container as any)._leaflet_id = null;
+            }
+            if (this.map) {
+                this.map.remove();
+            }
             this.map = L.map('report-map').setView([this.bin.latitude, this.bin.longitude], 16);
-            
+
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(this.map);
 
+            const binMarkerIcon = L.icon({
+                iconRetinaUrl: 'images/marker-icon-2x.png',
+                iconUrl: 'images/marker-icon.png',
+                shadowUrl: 'images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
             // Add marker for bin
-            L.marker([this.bin.latitude, this.bin.longitude]).addTo(this.map)
+            L.marker([this.bin.latitude, this.bin.longitude], { icon: binMarkerIcon }).addTo(this.map)
                 .bindPopup(`<b>Smart Bin #${this.bin.id}</b><br>${this.trimToThirdComma(this.bin.area)}`)
                 .openPopup();
         }, 150);
     }
 
+    ngOnDestroy(): void {
+        if (this.map) {
+            this.map.remove();
+        }
+    }
+
     selectStatus(status: string) {
         this.newReport.status = status as StatusEnum;
+    }
+
+    onFileSelected(event: any): void {
+        const file: File = event.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            this.showError({ message: 'Please select a valid image file (JPG, PNG, WebP).' });
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            this.showError({ message: 'Photo size cannot exceed 5MB.' });
+            return;
+        }
+
+        this.selectedPhotoFile = file;
+        const reader = new FileReader();
+        reader.onload = () => {
+            this.photoPreviewUrl = reader.result as string;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    removePhoto(): void {
+        this.selectedPhotoFile = null;
+        this.photoPreviewUrl = null;
+        this.manualPhotoUrl = '';
+        this.newReport.photoUrl = undefined;
     }
 
     reportBin() {
@@ -178,14 +236,40 @@ export class ReportBin implements OnInit {
     submitReport() {
         this.isLoading = true;
         this.newReport.binId = this.binId;
-        // userId is intentionally NOT sent from the client.
-        // The backend derives the authenticated user's identity from the JWT token.
+        const currentUserId = this.authService.getUserId();
+        if (currentUserId && currentUserId > 0) {
+            this.newReport.userId = currentUserId;
+        }
 
+        // If a photo file was captured, upload it first
+        if (this.selectedPhotoFile) {
+            this.binService.uploadPhoto(this.selectedPhotoFile).pipe(
+                tap((uploadRes) => {
+                    const uploadedUrl = uploadRes.data || uploadRes.url || '';
+                    this.newReport.photoUrl = uploadedUrl;
+                    this.executeReportSubmission();
+                }),
+                catchError((err) => {
+                    this.showError(err);
+                    this.isLoading = false;
+                    return [];
+                }),
+                takeUntilDestroyed(this.destroyRef)
+            ).subscribe();
+        } else {
+            if (this.manualPhotoUrl.trim()) {
+                this.newReport.photoUrl = this.manualPhotoUrl.trim();
+            }
+            this.executeReportSubmission();
+        }
+    }
+
+    private executeReportSubmission() {
         this.binService
             .reportBin(this.newReport)
             .pipe(
                 tap((res) => {
-                    this.showSuccess('Bin reported successfully! +25 Eco Points added to your profile.');
+                    this.showSuccess(res.message || 'Bin reported successfully! Points will be awarded upon collection verification.');
                     setTimeout(() => {
                         this.router.navigateByUrl('/landing');
                     }, 2000);
@@ -220,4 +304,3 @@ export class ReportBin implements OnInit {
         return parts.slice(0, 3).join(',').trim();
     }
 }
-

@@ -3,4 +3,6 @@ export interface CreateUserDto {
     name: string;
     email: string;
     passwordHash: string;
+    tenantId?: number;
+    tenantCode?: string;
 }

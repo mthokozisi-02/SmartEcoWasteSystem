@@ -62,6 +62,9 @@ namespace SmartEcoWaste.Infrastructure.DbContexts
             // 1. Consistent Soft Deletion & Tenant Isolation Global Query Filters
             // Every entity with IsDeleted is filtered by !e.IsDeleted by default.
             // Tenant-scoped entities are strictly filtered by TenantId.
+            // When SuperAdmin is scoped to a tenant (TenantId > 0), queries are strictly narrowed to that tenant.
+            // When SuperAdmin is in global platform context (TenantId <= 0), platform-wide queries are allowed.
+            // Unresolved contexts (TenantId <= 0 && !IsSuperAdmin) safely match 0 records (fail-closed).
             modelBuilder.Entity<Tenant>()
                 .HasQueryFilter(t => !t.IsDeleted);
 
@@ -69,37 +72,37 @@ namespace SmartEcoWaste.Infrastructure.DbContexts
                 .HasQueryFilter(ro => !ro.IsDeleted);
 
             modelBuilder.Entity<Property>()
-                .HasQueryFilter(p => !p.IsDeleted && _tenantAccessor != null && (_tenantAccessor.Tenant.IsSuperAdmin || (_tenantAccessor.Tenant.TenantId > 0 && p.TenantId == _tenantAccessor.Tenant.TenantId)));
+                .HasQueryFilter(p => !p.IsDeleted && _tenantAccessor != null && ((_tenantAccessor.Tenant.TenantId > 0 && p.TenantId == _tenantAccessor.Tenant.TenantId) || (_tenantAccessor.Tenant.TenantId <= 0 && _tenantAccessor.Tenant.IsSuperAdmin)));
 
             modelBuilder.Entity<Building>()
-                .HasQueryFilter(b => !b.IsDeleted && _tenantAccessor != null && (_tenantAccessor.Tenant.IsSuperAdmin || (_tenantAccessor.Tenant.TenantId > 0 && b.TenantId == _tenantAccessor.Tenant.TenantId)));
+                .HasQueryFilter(b => !b.IsDeleted && _tenantAccessor != null && ((_tenantAccessor.Tenant.TenantId > 0 && b.TenantId == _tenantAccessor.Tenant.TenantId) || (_tenantAccessor.Tenant.TenantId <= 0 && _tenantAccessor.Tenant.IsSuperAdmin)));
 
             modelBuilder.Entity<WasteZone>()
-                .HasQueryFilter(w => !w.IsDeleted && _tenantAccessor != null && (_tenantAccessor.Tenant.IsSuperAdmin || (_tenantAccessor.Tenant.TenantId > 0 && w.TenantId == _tenantAccessor.Tenant.TenantId)));
+                .HasQueryFilter(w => !w.IsDeleted && _tenantAccessor != null && ((_tenantAccessor.Tenant.TenantId > 0 && w.TenantId == _tenantAccessor.Tenant.TenantId) || (_tenantAccessor.Tenant.TenantId <= 0 && _tenantAccessor.Tenant.IsSuperAdmin)));
 
             modelBuilder.Entity<Bin>()
-                .HasQueryFilter(b => !b.IsDeleted && _tenantAccessor != null && (_tenantAccessor.Tenant.IsSuperAdmin || (_tenantAccessor.Tenant.TenantId > 0 && b.TenantId == _tenantAccessor.Tenant.TenantId)));
+                .HasQueryFilter(b => !b.IsDeleted && _tenantAccessor != null && ((_tenantAccessor.Tenant.TenantId > 0 && b.TenantId == _tenantAccessor.Tenant.TenantId) || (_tenantAccessor.Tenant.TenantId <= 0 && _tenantAccessor.Tenant.IsSuperAdmin)));
 
             modelBuilder.Entity<CollectionTask>()
-                .HasQueryFilter(t => !t.IsDeleted && _tenantAccessor != null && (_tenantAccessor.Tenant.IsSuperAdmin || (_tenantAccessor.Tenant.TenantId > 0 && t.TenantId == _tenantAccessor.Tenant.TenantId)));
+                .HasQueryFilter(t => !t.IsDeleted && _tenantAccessor != null && ((_tenantAccessor.Tenant.TenantId > 0 && t.TenantId == _tenantAccessor.Tenant.TenantId) || (_tenantAccessor.Tenant.TenantId <= 0 && _tenantAccessor.Tenant.IsSuperAdmin)));
 
             modelBuilder.Entity<BinInspectionLog>()
-                .HasQueryFilter(l => !l.IsDeleted && _tenantAccessor != null && (_tenantAccessor.Tenant.IsSuperAdmin || (_tenantAccessor.Tenant.TenantId > 0 && l.TenantId == _tenantAccessor.Tenant.TenantId)));
+                .HasQueryFilter(l => !l.IsDeleted && _tenantAccessor != null && ((_tenantAccessor.Tenant.TenantId > 0 && l.TenantId == _tenantAccessor.Tenant.TenantId) || (_tenantAccessor.Tenant.TenantId <= 0 && _tenantAccessor.Tenant.IsSuperAdmin)));
 
             modelBuilder.Entity<Report>()
-                .HasQueryFilter(r => !r.IsDeleted && _tenantAccessor != null && (_tenantAccessor.Tenant.IsSuperAdmin || (_tenantAccessor.Tenant.TenantId > 0 && r.TenantId == _tenantAccessor.Tenant.TenantId)));
+                .HasQueryFilter(r => !r.IsDeleted && _tenantAccessor != null && ((_tenantAccessor.Tenant.TenantId > 0 && r.TenantId == _tenantAccessor.Tenant.TenantId) || (_tenantAccessor.Tenant.TenantId <= 0 && _tenantAccessor.Tenant.IsSuperAdmin)));
 
             modelBuilder.Entity<User>()
-                .HasQueryFilter(u => !u.IsDeleted && _tenantAccessor != null && (_tenantAccessor.Tenant.IsSuperAdmin || (_tenantAccessor.Tenant.TenantId > 0 && u.TenantId == _tenantAccessor.Tenant.TenantId)));
+                .HasQueryFilter(u => !u.IsDeleted && _tenantAccessor != null && ((_tenantAccessor.Tenant.TenantId > 0 && u.TenantId == _tenantAccessor.Tenant.TenantId) || (_tenantAccessor.Tenant.TenantId <= 0 && _tenantAccessor.Tenant.IsSuperAdmin)));
 
             modelBuilder.Entity<UserPoints>()
-                .HasQueryFilter(up => !up.IsDeleted && _tenantAccessor != null && (_tenantAccessor.Tenant.IsSuperAdmin || (_tenantAccessor.Tenant.TenantId > 0 && up.TenantId == _tenantAccessor.Tenant.TenantId)));
+                .HasQueryFilter(up => !up.IsDeleted && _tenantAccessor != null && ((_tenantAccessor.Tenant.TenantId > 0 && up.TenantId == _tenantAccessor.Tenant.TenantId) || (_tenantAccessor.Tenant.TenantId <= 0 && _tenantAccessor.Tenant.IsSuperAdmin)));
 
             modelBuilder.Entity<Redemption>()
-                .HasQueryFilter(rd => !rd.IsDeleted && _tenantAccessor != null && (_tenantAccessor.Tenant.IsSuperAdmin || (_tenantAccessor.Tenant.TenantId > 0 && rd.TenantId == _tenantAccessor.Tenant.TenantId)));
+                .HasQueryFilter(rd => !rd.IsDeleted && _tenantAccessor != null && ((_tenantAccessor.Tenant.TenantId > 0 && rd.TenantId == _tenantAccessor.Tenant.TenantId) || (_tenantAccessor.Tenant.TenantId <= 0 && _tenantAccessor.Tenant.IsSuperAdmin)));
 
             modelBuilder.Entity<AuditLog>()
-                .HasQueryFilter(a => !a.IsDeleted && _tenantAccessor != null && (_tenantAccessor.Tenant.IsSuperAdmin || (_tenantAccessor.Tenant.TenantId > 0 && a.TenantId == _tenantAccessor.Tenant.TenantId)));
+                .HasQueryFilter(a => !a.IsDeleted && _tenantAccessor != null && ((_tenantAccessor.Tenant.TenantId > 0 && a.TenantId == _tenantAccessor.Tenant.TenantId) || (_tenantAccessor.Tenant.TenantId <= 0 && _tenantAccessor.Tenant.IsSuperAdmin)));
 
             // Performance & Query Optimization Indexes
             modelBuilder.Entity<Bin>()
@@ -127,6 +130,12 @@ namespace SmartEcoWaste.Infrastructure.DbContexts
                 .WithMany()
                 .HasForeignKey(r => r.VerifiedBy)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Report>()
+                .HasOne(r => r.AssignedUser)
+                .WithMany()
+                .HasForeignKey(r => r.AssignedTo)
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<User>()
                 .HasMany(u => u.UserReports)
@@ -277,34 +286,50 @@ namespace SmartEcoWaste.Infrastructure.DbContexts
             {
                 var tenantIdProp = entry.Property(nameof(IMustHaveTenant.TenantId));
 
+                // Reject any operation on tenant-scoped entities if the tenant context is unresolved
+                if (!currentTenant.IsResolved)
+                {
+                    throw new InvalidOperationException(
+                        $"Tenant context unresolved. Cannot perform '{entry.State}' on tenant-scoped entity '{entry.Entity.GetType().Name}'. " +
+                        "An active, validated tenant context or an authorized system/SuperAdmin context is required.");
+                }
+
                 if (entry.State == EntityState.Added)
                 {
                     if (currentTenant.IsSuperAdmin)
                     {
-                        // SuperAdmin can explicitly set TenantId; if not set, fallback to active context
-                        if (entry.Entity.TenantId <= 0 && currentTenant.TenantId > 0)
+                        // In SuperAdmin context:
+                        // If scoped to a specific tenant (TenantId > 0), enforce that target tenant.
+                        if (currentTenant.TenantId > 0)
                         {
+                            if (entry.Entity.TenantId > 0 && entry.Entity.TenantId != currentTenant.TenantId)
+                            {
+                                throw new InvalidOperationException(
+                                    $"SuperAdmin context is currently scoped to tenant '{currentTenant.TenantId}', but entity '{entry.Entity.GetType().Name}' has TenantId '{entry.Entity.TenantId}'.");
+                            }
                             entry.Entity.TenantId = currentTenant.TenantId;
                         }
-                    }
-                    else if (currentTenant.TenantId > 0)
-                    {
-                        // Prevent client request data tampering: client cannot choose another tenant by manipulating request data
-                        if (entry.Entity.TenantId > 0 && entry.Entity.TenantId != currentTenant.TenantId)
+                        else
                         {
-                            throw new InvalidOperationException($"Cross-tenant creation forbidden. Attempted to create an entity for tenant '{entry.Entity.TenantId}', but active authorized tenant is '{currentTenant.TenantId}'.");
+                            // In global SuperAdmin / System context (TenantId == 0), TenantId must be explicitly specified
+                            if (entry.Entity.TenantId <= 0)
+                            {
+                                throw new InvalidOperationException(
+                                    $"TenantId must be explicitly specified when creating tenant-scoped entity '{entry.Entity.GetType().Name}' in a global administrative context.");
+                            }
                         }
-
-                        // Always enforce the authorized tenant context ID
-                        entry.Entity.TenantId = currentTenant.TenantId;
                     }
                     else
                     {
-                        // Unauthenticated or system operation (e.g. initial registration or QR scan)
-                        if (entry.Entity.TenantId <= 0)
+                        // Standard tenant context: Prevent client request payload tampering
+                        if (entry.Entity.TenantId > 0 && entry.Entity.TenantId != currentTenant.TenantId)
                         {
-                            throw new InvalidOperationException("Cannot create a tenant-scoped entity without an active, validated tenant context.");
+                            throw new InvalidOperationException(
+                                $"Cross-tenant creation forbidden. Attempted to create an entity for tenant '{entry.Entity.TenantId}', but active authorized tenant is '{currentTenant.TenantId}'.");
                         }
+
+                        // Always enforce authorized tenant context ID
+                        entry.Entity.TenantId = currentTenant.TenantId;
                     }
                 }
                 else if (entry.State == EntityState.Modified)
@@ -312,24 +337,55 @@ namespace SmartEcoWaste.Infrastructure.DbContexts
                     var originalTenantId = (int)tenantIdProp.OriginalValue!;
                     var currentTenantId = (int)tenantIdProp.CurrentValue!;
 
-                    // Immutable TenantId: Records can never be moved between tenants
+                    // Immutable TenantId: Records can never be transferred between tenants
                     if (tenantIdProp.IsModified && originalTenantId != currentTenantId)
                     {
-                        throw new InvalidOperationException($"TenantId is immutable. Entity '{entry.Entity.GetType().Name}' cannot be transferred between tenants.");
+                        throw new InvalidOperationException(
+                            $"TenantId is immutable. Entity '{entry.Entity.GetType().Name}' cannot be transferred between tenants.");
                     }
 
                     // Cross-tenant modification guard
-                    if (!currentTenant.IsSuperAdmin && currentTenant.TenantId > 0 && originalTenantId != currentTenant.TenantId)
+                    if (currentTenant.IsSuperAdmin)
                     {
-                        throw new InvalidOperationException($"Cross-tenant modification forbidden. You cannot modify records belonging to tenant '{originalTenantId}'.");
+                        // If SuperAdmin is scoped to a specific tenant, ensure the entity belongs to that tenant
+                        if (currentTenant.TenantId > 0 && originalTenantId != currentTenant.TenantId)
+                        {
+                            throw new InvalidOperationException(
+                                $"Cross-tenant modification forbidden. SuperAdmin context is scoped to tenant '{currentTenant.TenantId}', but target record belongs to tenant '{originalTenantId}'.");
+                        }
+                    }
+                    else
+                    {
+                        // Standard tenant context: can only modify records belonging to active tenant
+                        if (originalTenantId != currentTenant.TenantId)
+                        {
+                            throw new InvalidOperationException(
+                                $"Cross-tenant modification forbidden. You cannot modify records belonging to tenant '{originalTenantId}'.");
+                        }
                     }
                 }
                 else if (entry.State == EntityState.Deleted)
                 {
                     var originalTenantId = (int)tenantIdProp.OriginalValue!;
-                    if (!currentTenant.IsSuperAdmin && currentTenant.TenantId > 0 && originalTenantId != currentTenant.TenantId)
+
+                    // Cross-tenant deletion guard
+                    if (currentTenant.IsSuperAdmin)
                     {
-                        throw new InvalidOperationException($"Cross-tenant deletion forbidden. You cannot delete records belonging to tenant '{originalTenantId}'.");
+                        // If SuperAdmin is scoped to a specific tenant, ensure the entity belongs to that tenant
+                        if (currentTenant.TenantId > 0 && originalTenantId != currentTenant.TenantId)
+                        {
+                            throw new InvalidOperationException(
+                                $"Cross-tenant deletion forbidden. SuperAdmin context is scoped to tenant '{currentTenant.TenantId}', but target record belongs to tenant '{originalTenantId}'.");
+                        }
+                    }
+                    else
+                    {
+                        // Standard tenant context: can only delete records belonging to active tenant
+                        if (originalTenantId != currentTenant.TenantId)
+                        {
+                            throw new InvalidOperationException(
+                                $"Cross-tenant deletion forbidden. You cannot delete records belonging to tenant '{originalTenantId}'.");
+                        }
                     }
                 }
             }

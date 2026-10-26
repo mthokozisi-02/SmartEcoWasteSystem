@@ -3,70 +3,117 @@
 </div>
 <p-toast></p-toast>
 
-<p-table
-    #dt
-    [value]="users()"
-    [rows]="10"
-    [paginator]="true"
-    [globalFilterFields]="['name']"
-    [tableStyle]="{ 'min-width': '75rem' }"
-    [rowHover]="true"
-    dataKey="id"
-    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
-    [showCurrentPageReport]="true"
-    [rowsPerPageOptions]="[10, 20, 30]"
->
-    <ng-template #caption>
-        <div class="flex items-center justify-between">
-            <p-iconfield>
-                <p-inputicon class="pi pi-search" />
-                <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Search..." />
-            </p-iconfield>
-        </div>
-    </ng-template>
-    <ng-template #header>
-        <tr>
-            <th style="width: 3rem">ID</th>
-            <th style="min-width: 6rem">Name</th>
-            <th pSortableColumn="name" style="min-width: 6rem">Email</th>
-            <th pSortableColumn="price" style="min-width: 6rem">Role</th>
-            <th pSortableColumn="price" style="min-width: 4rem">Reports</th>
-            <th pSortableColumn="price" style="min-width: 4rem">User Points</th>
-            <th pSortableColumn="category" style="min-width: 6rem">Created At</th>
-            <th style="min-width: 3rem"></th>
-        </tr>
-    </ng-template>
-    <ng-template #body let-user>
-        <tr>
-            <td style="width: 3rem">{{user.id}}</td>
-            <td style="min-width: 6rem">{{ user.name }}</td>
-            <td style="min-width: 6rem">{{ user.email }}</td>
-            <td style="min-width: 6rem">{{ user.roleName }}</td>
-            <td style="min-width: 4rem">{{ user.reports }}</td>
-            <td style="min-width: 4rem">
-                <p-badge [value]="user.userPoints" [severity]="userSeverity(user)" />
-            </td>
-
-            <td style="min-width: 6rem">{{ user.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
-            <td>
-                <p-button icon="pi pi-pencil" label="Update Role" severity="info" class="mr-2" [rounded]="true" [outlined]="true" (click)="updateRole(user)" />
-                <p-button icon="pi pi-trash" severity="danger" class="mr-2" [rounded]="true" [outlined]="true" (click)="deleteUser(user.id)" />
-            </td>
-        </tr>
-    </ng-template>
-</p-table>
+<div class="card">
+    <p-table
+        #dt
+        [value]="users()"
+        [rows]="10"
+        [paginator]="true"
+        [globalFilterFields]="['name', 'email', 'roleName']"
+        [tableStyle]="{ 'min-width': '75rem' }"
+        [rowHover]="true"
+        dataKey="id"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
+        [showCurrentPageReport]="true"
+        [rowsPerPageOptions]="[10, 20, 30]"
+    >
+        <ng-template #caption>
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                    <p-iconfield>
+                        <p-inputicon class="pi pi-search" />
+                        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Search users by name, email..." />
+                    </p-iconfield>
+                </div>
+                <div class="flex items-center gap-2">
+                    <p-button label="Add Staff Member" icon="pi pi-user-plus" severity="success" (click)="openAddStaffDialog()" />
+                </div>
+            </div>
+        </ng-template>
+        <ng-template #header>
+            <tr>
+                <th style="width: 3rem">ID</th>
+                <th pSortableColumn="name" style="min-width: 8rem">Name</th>
+                <th pSortableColumn="email" style="min-width: 10rem">Email</th>
+                <th style="min-width: 8rem">Organization</th>
+                <th pSortableColumn="roleName" style="min-width: 6rem">Role</th>
+                <th pSortableColumn="reports" style="min-width: 4rem">Reports</th>
+                <th pSortableColumn="userPoints" style="min-width: 4rem">User Points</th>
+                <th pSortableColumn="createdAt" style="min-width: 8rem">Joined At</th>
+                <th style="min-width: 14rem">Actions</th>
+            </tr>
+        </ng-template>
+        <ng-template #body let-user>
+            <tr>
+                <td style="width: 3rem">{{ user.id }}</td>
+                <td style="min-width: 8rem" class="font-medium">{{ user.name }}</td>
+                <td style="min-width: 10rem">{{ user.email }}</td>
+                <td style="min-width: 8rem">
+                    <p-tag [value]="user.tenantName || ('Tenant #' + user.tenantId)" severity="info" icon="pi pi-building" />
+                </td>
+                <td style="min-width: 6rem">
+                    <p-tag [value]="user.roleName" [severity]="getRoleSeverity(user.roleName)" />
+                </td>
+                <td style="min-width: 4rem">{{ user.reports }}</td>
+                <td style="min-width: 4rem">
+                    <p-badge [value]="user.userPoints" [severity]="userSeverity(user)" />
+                </td>
+                <td style="min-width: 8rem">{{ user.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                <td>
+                    <p-button *ngIf="user.roleName !== 'Staff' && user.roleName !== 'Admin'" icon="pi pi-user-plus" label="Make Staff" severity="success" class="mr-2" [rounded]="true" [outlined]="true" (click)="promoteToStaff(user)" />
+                    <p-button icon="pi pi-pencil" label="Edit Role" severity="info" class="mr-2" [rounded]="true" [outlined]="true" (click)="updateRole(user)" />
+                    <p-button icon="pi pi-trash" severity="danger" class="mr-2" [rounded]="true" [outlined]="true" (click)="deleteUser(user.id)" />
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
 
 <p-confirmdialog [style]="{ width: '450px' }" />
 
-<p-dialog [(visible)]="updateUserDialog" [style]="{ width: '250px' }" header="User Detail" [modal]="true">
+<!-- Update Role Dialog -->
+<p-dialog [(visible)]="updateUserDialog" [style]="{ width: '320px' }" header="Update User Role" [modal]="true">
     <ng-template #content>
-        <div class="card flex justify-center">
-            <p-select [options]="roles" appendTo="body" [(ngModel)]="selectedRole" optionLabel="name" placeholder="Select a Role" class="w-full md:w-56" />
+        <div class="flex flex-col gap-3 py-2">
+            <label class="font-bold text-sm">Select New Role</label>
+            <p-select [options]="roles" appendTo="body" [(ngModel)]="selectedRole" optionLabel="name" placeholder="Select a Role" class="w-full" [fluid]="true" />
         </div>
     </ng-template>
 
     <ng-template #footer>
-        <p-button label="Cancel" icon="pi pi-times" severity="danger" text (click)="hideDialog()" />
-        <p-button label="Save" icon="pi pi-check" (click)="saveRole()" />
+        <p-button label="Cancel" icon="pi pi-times" severity="secondary" text (click)="hideDialog()" />
+        <p-button label="Save Changes" icon="pi pi-check" severity="success" (click)="saveRole()" />
+    </ng-template>
+</p-dialog>
+
+<!-- Add Existing User as Staff Dialog -->
+<p-dialog [(visible)]="addStaffDialog" [style]="{ width: '450px' }" header="Add Existing User as Staff" [modal]="true">
+    <ng-template #content>
+        <div class="flex flex-col gap-4 py-2">
+            <p class="text-sm text-muted-color m-0">
+                Select any registered citizen/user to promote them to the <b>Staff</b> role. Once added as staff, you will be able to assign them bin collection tasks, and they can log in to view and complete their work.
+            </p>
+
+            <div>
+                <label class="block font-bold text-sm mb-2">Select User</label>
+                <p-select 
+                    [options]="candidateUsers()" 
+                    [(ngModel)]="selectedCandidateUser" 
+                    optionLabel="displayName" 
+                    placeholder="Search and choose a user..." 
+                    appendTo="body" 
+                    class="w-full"
+                    [fluid]="true"
+                />
+                <div *ngIf="candidateUsers().length === 0" class="text-xs text-muted-color mt-2 italic">
+                    All registered users in the system already have Staff or Admin privileges.
+                </div>
+            </div>
+        </div>
+    </ng-template>
+
+    <ng-template #footer>
+        <p-button label="Cancel" icon="pi pi-times" severity="secondary" text (click)="addStaffDialog = false" />
+        <p-button label="Add as Staff" icon="pi pi-user-check" severity="success" [disabled]="!selectedCandidateUser" (click)="saveAddStaff()" />
     </ng-template>
 </p-dialog>

@@ -44,7 +44,16 @@ namespace SmartEcoWaste.Services.Services
 
             // Resolve target tenant securely
             Tenant? targetTenant = null;
-            if (!string.IsNullOrWhiteSpace(userDto.TenantCode))
+
+            // 1. If caller is an authenticated tenant admin/supervisor (not SuperAdmin), ALWAYS bind to caller's tenant
+            if (_tenantAccessor?.Tenant != null && _tenantAccessor.Tenant.TenantId > 0 && !_tenantAccessor.Tenant.IsSuperAdmin)
+            {
+                targetTenant = await _smartEcoWasteDb.Tenants
+                    .FirstOrDefaultAsync(t => t.Id == _tenantAccessor.Tenant.TenantId && t.IsActive && !t.IsDeleted);
+            }
+
+            // 2. Otherwise (public registration or SuperAdmin explicitly specifying tenant)
+            if (targetTenant == null && !string.IsNullOrWhiteSpace(userDto.TenantCode))
             {
                 targetTenant = await _smartEcoWasteDb.Tenants
                     .FirstOrDefaultAsync(t => t.Code == userDto.TenantCode.Trim() && t.IsActive && !t.IsDeleted);
@@ -54,7 +63,7 @@ namespace SmartEcoWaste.Services.Services
                     return ServiceResponse<string>.Fail("Specified organization code is invalid or inactive.");
                 }
             }
-            else if (userDto.TenantId.HasValue && userDto.TenantId.Value > 0)
+            else if (targetTenant == null && userDto.TenantId.HasValue && userDto.TenantId.Value > 0)
             {
                 targetTenant = await _smartEcoWasteDb.Tenants
                     .FirstOrDefaultAsync(t => t.Id == userDto.TenantId.Value && t.IsActive && !t.IsDeleted);
@@ -64,7 +73,13 @@ namespace SmartEcoWaste.Services.Services
                     return ServiceResponse<string>.Fail("Specified organization is invalid or inactive.");
                 }
             }
-            else
+            else if (targetTenant == null && _tenantAccessor?.Tenant != null && _tenantAccessor.Tenant.TenantId > 0)
+            {
+                targetTenant = await _smartEcoWasteDb.Tenants
+                    .FirstOrDefaultAsync(t => t.Id == _tenantAccessor.Tenant.TenantId && t.IsActive && !t.IsDeleted);
+            }
+
+            if (targetTenant == null)
             {
                 // Default to first active public organization
                 targetTenant = await _smartEcoWasteDb.Tenants
@@ -86,6 +101,8 @@ namespace SmartEcoWaste.Services.Services
                 IsEmailConfirmed = false
             };
 
+            // Authorize user creation under verified target tenant context
+            _tenantAccessor.SetTenant(targetTenant.Id, false);
             _smartEcoWasteDb.Users.Add(newUser);
             await _smartEcoWasteDb.SaveChangesAsync();
 
@@ -138,7 +155,7 @@ namespace SmartEcoWaste.Services.Services
                 return ServiceResponse<TokenResponseDto>.Fail("Refresh token is invalid, expired, or has already been used.");
             }
 
-            _tenantAccessor.SetTenant(user.TenantId, false);
+            _tenantAccessor.SetTenant(user.TenantId, user.Role?.Name == "SuperAdmin");
             // CreateTokenResponse issues a new refresh token (rotation) and persists the new hash
             return await CreateTokenResponse(user);
         }
@@ -148,10 +165,12 @@ namespace SmartEcoWaste.Services.Services
             var hash = HashRefreshToken(rawToken);
             var user = await _smartEcoWasteDb.Users
                 .IgnoreQueryFilters()
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.RefreshToken == hash);
 
             if (user != null)
             {
+                _tenantAccessor.SetTenant(user.TenantId, user.Role?.Name == "SuperAdmin");
                 user.RefreshToken = null;
                 user.RefreshTokenExpiryTime = null;
                 user.UpdatedAt = DateTime.UtcNow;
@@ -188,7 +207,7 @@ namespace SmartEcoWaste.Services.Services
             if (new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, userDto.PasswordHash)
                 == PasswordVerificationResult.Success)
             {
-                _tenantAccessor.SetTenant(user.TenantId, false);
+                _tenantAccessor.SetTenant(user.TenantId, user.Role?.Name == "SuperAdmin");
                 var response = await CreateTokenResponse(user);
                 return response;
             }
@@ -220,7 +239,8 @@ namespace SmartEcoWaste.Services.Services
                 TenantCode = user.Tenant?.Code ?? "MAIN",
                 OrganizationType = user.Tenant?.OrganizationType ?? "CommercialMall",
                 Role = user.Role?.Name ?? "User",
-                UserName = user.Name
+                UserName = user.Name,
+                Email = user.Email
             };
 
             return ServiceResponse<TokenResponseDto>.Success(
@@ -253,6 +273,7 @@ namespace SmartEcoWaste.Services.Services
             var claims = new List<Claim>
             {
                 new(ClaimTypes.Name, user.Email),
+                new(ClaimTypes.Email, user.Email),
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new(ClaimTypes.Role, user.Role?.Name ?? "User"),
                 new("TenantId", user.TenantId.ToString()),
@@ -280,21 +301,31 @@ namespace SmartEcoWaste.Services.Services
 
         public async Task<ServiceResponse<List<UserResponseDto>>> GetAllAsync()
         {
-            var users = await _smartEcoWasteDb.Users
+            var query = _smartEcoWasteDb.Users
                 .Include(u => u.Role)
+                .Include(u => u.Tenant)
                 .Include(u => u.UserReports)
                 .Include(u => u.Points)
-                .Where(u => u.IsDeleted == false)
-                .ToListAsync();
+                .Where(u => u.IsDeleted == false);
+
+            // Tenant isolation: Standard tenant users/admins only see users within their organization.
+            // SuperAdmin can see all users across tenants.
+            if (_tenantAccessor?.Tenant != null && _tenantAccessor.Tenant.TenantId > 0 && !_tenantAccessor.Tenant.IsSuperAdmin)
+            {
+                query = query.Where(u => u.TenantId == _tenantAccessor.Tenant.TenantId);
+            }
+
+            var users = await query.ToListAsync();
 
             var results = _mapper.Map<List<UserResponseDto>>(users);
 
-            foreach (var user in results)
+            for (int i = 0; i < users.Count; i++)
             {
-                user.RoleName = user.Role.Name;
-                user.Reports = user.UserReports!.Count;
-                user.UserPoints = user.Points != null
-                    ? user.Points.Sum(up => up.Points)
+                results[i].TenantName = users[i].Tenant?.Name ?? $"Tenant #{users[i].TenantId}";
+                results[i].RoleName = users[i].Role?.Name ?? "User";
+                results[i].Reports = users[i].UserReports?.Count ?? 0;
+                results[i].UserPoints = users[i].Points != null
+                    ? users[i].Points.Sum(up => up.Points)
                     : 0;
             }
 
@@ -304,9 +335,56 @@ namespace SmartEcoWaste.Services.Services
             );
         }
 
+        public async Task<ServiceResponse<string>> MakeStaffAsync(int adminUserId, int targetUserId)
+        {
+            var targetUser = await _smartEcoWasteDb.Users
+                .IgnoreQueryFilters()
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == targetUserId && !u.IsDeleted);
+
+            if (targetUser == null)
+            {
+                return ServiceResponse<string>.Fail("User not found.");
+            }
+
+            if (adminUserId == targetUserId)
+            {
+                return ServiceResponse<string>.Fail("Administrators cannot change their own role to staff.");
+            }
+
+            var staffRole = await _smartEcoWasteDb.Roles
+                .FirstOrDefaultAsync(r => r.Id == 3 || r.Name == "Staff");
+
+            if (staffRole == null)
+            {
+                staffRole = new Role { Name = "Staff" };
+                _smartEcoWasteDb.Roles.Add(staffRole);
+                await _smartEcoWasteDb.SaveChangesAsync();
+            }
+
+            var adminUser = await _smartEcoWasteDb.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Id == adminUserId);
+
+            if (adminUser != null && adminUser.TenantId > 0)
+            {
+                targetUser.TenantId = adminUser.TenantId;
+            }
+
+            targetUser.RoleId = staffRole.Id;
+            targetUser.UpdatedAt = DateTime.UtcNow;
+            await _smartEcoWasteDb.SaveChangesAsync();
+
+            return ServiceResponse<string>.Success(
+                "User successfully assigned Staff role",
+                $"User '{targetUser.Name}' ({targetUser.Email}) is now assigned as Staff."
+            );
+        }
+
         public async Task<ServiceResponse<string>> AssignRolesAsync(int adminUserId, AssignUserRolesDto userRole)
         {
             var targetUser = await _smartEcoWasteDb.Users
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Id == userRole.UserId && !u.IsDeleted);
 
             if (targetUser == null)
@@ -335,7 +413,17 @@ namespace SmartEcoWaste.Services.Services
                 return ServiceResponse<string>.Fail("Unauthorized: Cannot assign platform SuperAdmin role.");
             }
 
+            var adminUser = await _smartEcoWasteDb.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Id == adminUserId);
+
+            if (adminUser != null && adminUser.TenantId > 0 && targetUser.TenantId != adminUser.TenantId)
+            {
+                targetUser.TenantId = adminUser.TenantId;
+            }
+
             targetUser.RoleId = userRole.RoleId;
+            targetUser.UpdatedAt = DateTime.UtcNow;
             await _smartEcoWasteDb.SaveChangesAsync();
 
             return ServiceResponse<string>.Success(
@@ -462,11 +550,17 @@ namespace SmartEcoWaste.Services.Services
                 return ServiceResponse<GetUserDto>.Fail("Unauthorized: You can only view your own profile.");
             }
 
-            var user = await _smartEcoWasteDb.Users
+            var query = _smartEcoWasteDb.Users
                 .Include(u => u.UserReports)
                 .Include(u => u.Points)
-                .Where(u => u.IsDeleted == false)
-                .FirstOrDefaultAsync(u => u.Id == targetUserId);
+                .Where(u => u.IsDeleted == false);
+
+            if (callerUserId == targetUserId)
+            {
+                query = query.IgnoreQueryFilters();
+            }
+
+            var user = await query.FirstOrDefaultAsync(u => u.Id == targetUserId);
 
             if (user == null)
             {

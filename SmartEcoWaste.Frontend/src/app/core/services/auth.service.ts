@@ -66,6 +66,7 @@ export class AuthService {
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('expires_at');
         localStorage.removeItem('user_id');
+        localStorage.removeItem('user_email');
         localStorage.removeItem('tenant_id');
         localStorage.removeItem('tenant_name');
         localStorage.removeItem('tenant_code');
@@ -101,6 +102,8 @@ export class AuthService {
         if (data?.organizationType) localStorage.setItem('organization_type', data.organizationType);
         if (data?.role) localStorage.setItem('user_role', data.role);
         if (data?.userName) localStorage.setItem('user_name', data.userName);
+        if (data?.userId) localStorage.setItem('user_id', data.userId.toString());
+        if (data?.email) localStorage.setItem('user_email', data.email);
 
         this.startRefreshTokenTimer(expiresIn);
     }
@@ -137,7 +140,7 @@ export class AuthService {
                 if (decoded?.TenantId) return parseInt(decoded.TenantId, 10);
             } catch {}
         }
-        return 1;
+        return 0;
     }
 
     getTenantName(): string {
@@ -195,6 +198,47 @@ export class AuthService {
         } catch {
             return null;
         }
+    }
+
+    getUserId(): number | null {
+        const uid = localStorage.getItem('user_id');
+        if (uid) return parseInt(uid, 10);
+
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            try {
+                const decoded: any = jwtDecode(token);
+                const id = decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || decoded['nameid'] || decoded['sub'];
+                if (id) {
+                    const parsed = parseInt(id, 10);
+                    localStorage.setItem('user_id', parsed.toString());
+                    return parsed;
+                }
+            } catch {}
+        }
+        return null;
+    }
+
+    getUserEmail(): string | null {
+        const storedEmail = localStorage.getItem('user_email');
+        if (storedEmail) return storedEmail;
+
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            try {
+                const decoded: any = jwtDecode(token);
+                const email =
+                    decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
+                    decoded['email'] ||
+                    decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+                    decoded['unique_name'];
+                if (email) {
+                    localStorage.setItem('user_email', email);
+                    return email;
+                }
+            } catch {}
+        }
+        return null;
     }
 
     // ===============================

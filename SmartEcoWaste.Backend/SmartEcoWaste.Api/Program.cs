@@ -103,8 +103,10 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider
         .GetRequiredService<SmartEcoWasteDbContext>();
+    var tenantAccessor = scope.ServiceProvider
+        .GetRequiredService<ITenantContextAccessor>();
 
-    await DbSeeder.SeedAsync(dbContext);
+    await DbSeeder.SeedAsync(dbContext, tenantAccessor);
 }
 
 // Pipeline: Correlation ID & Global Exception Handling first

@@ -1,4 +1,4 @@
-﻿using SmartEcoWaste.Data.Enums;
+using SmartEcoWaste.Data.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,5 +12,6 @@ namespace SmartEcoWaste.Data.Dtos
         public int UserId { get; set; }
         public int BinId { get; set; }
         public Status Status { get; set; }
+        public string? PhotoUrl { get; set; }
     }
 }

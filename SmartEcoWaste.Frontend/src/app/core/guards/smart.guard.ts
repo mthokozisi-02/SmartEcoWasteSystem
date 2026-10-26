@@ -25,8 +25,12 @@ export class SmartGuard implements CanActivate {
         // Role check (if defined)
         const expectedRole = route.data['role'];
         if (expectedRole) {
-            const userRole = this.authService.getUserRole();
-            if (userRole !== expectedRole && userRole !== 'Admin') {
+            const userRole = (this.authService.getUserRole() || '').toLowerCase();
+            const allowedRoles: string[] = Array.isArray(expectedRole)
+                ? expectedRole.map((r: string) => r.toLowerCase())
+                : [expectedRole.toLowerCase()];
+
+            if (!allowedRoles.includes(userRole) && userRole !== 'admin' && userRole !== 'superadmin') {
                 this.router.navigate(['/']);
                 return false;
             }

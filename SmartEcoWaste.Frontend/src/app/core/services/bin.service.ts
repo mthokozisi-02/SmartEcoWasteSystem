@@ -41,4 +41,10 @@ export class BinService {
     reportBin(bin: ReportBinDto): Observable<any> {
         return this.http.post<any>(`${apiUrl}/report-bin`, bin);
     }
+
+    uploadPhoto(file: File): Observable<any> {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this.http.post<any>(`${apiUrl}/upload-photo`, formData);
+    }
 }

@@ -20,5 +20,6 @@ namespace SmartEcoWaste.Services.Interfaces
         Task<ServiceResponse<string>> DeleteUserAsync(int adminUserId, int targetUserId);
         Task<ServiceResponse<List<Role>>> GetAllRolesAsync();
         Task<ServiceResponse<GetUserDto>> GetUser(int callerUserId, bool isAdminOrSupervisor, int targetUserId);
+        Task<ServiceResponse<string>> MakeStaffAsync(int adminUserId, int targetUserId);
     }
 }

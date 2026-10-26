@@ -11,5 +11,6 @@ namespace SmartEcoWaste.Services.Interfaces
         Task<ServiceResponse<string>> VerifyReportAsync(int collectorUserId, VerifyBinDto verify);
         Task<string> DeleteReport(int id);
         Task<ServiceResponse<GraphDataDto>> GetGraphDataAsync();
+        Task<ServiceResponse<string>> AssignReportAsync(int currentUserId, AssignReportDto dto);
     }
 }

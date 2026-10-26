@@ -12,7 +12,7 @@ import { ManageTasks } from './manage-tasks/manage-tasks';
 
 export default [
     { path: 'report-bin', component: ReportBin },
-    { path: 'manage-bins', component: ManageBins, canActivate: [SmartGuard], data: { role: 'Admin' } },
+    { path: 'manage-bins', component: ManageBins, canActivate: [SmartGuard], data: { role: ['Admin', 'Staff'] } },
     { path: 'manage-properties', component: ManageProperties, canActivate: [SmartGuard], data: { role: 'Admin' } },
     { path: 'manage-tasks', component: ManageTasks, canActivate: [SmartGuard] },
     { path: 'create-bin', component: CreateBin, canActivate: [SmartGuard], data: { role: 'Admin' } },

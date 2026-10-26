@@ -16,7 +16,7 @@
             <div class="flex items-center justify-between">
                 <p-iconfield>
                     <p-inputicon class="pi pi-search" />
-                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Search..." />
+                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Search bins..." />
                 </p-iconfield>
             </div>
         </ng-template>
@@ -28,7 +28,7 @@
                 <th style="min-width: 6rem">Latitude</th>
                 <th style="min-width: 6rem">Longitude</th>
                 <th pSortableColumn="price" style="min-width: 12rem">Created At</th>
-                <th style="min-width: 12rem"></th>
+                <th style="min-width: 8rem">Actions</th>
             </tr>
         </ng-template>
         <ng-template #body let-bin>
@@ -43,7 +43,7 @@
                 <td style="min-width: 12rem">{{ bin.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
                 <td>
                     <p-button icon="pi pi-eye" label="View" severity="info" class="mr-2" [rounded]="true" [outlined]="true" (click)="viewBin(bin)" />
-                    <p-button icon="pi pi-trash" severity="danger" class="mr-2" [rounded]="true" [outlined]="true" (click)="deleteReport(bin.id)" />
+                    <p-button *ngIf="isAdmin" icon="pi pi-trash" severity="danger" class="mr-2" [rounded]="true" [outlined]="true" (click)="deleteReport(bin.id)" />
                 </td>
             </tr>
         </ng-template>

@@ -14,10 +14,14 @@ namespace SmartEcoWaste.Data.Entities
         public string? RejectionReason { get; set; }
         public DateTime? VerifiedAt { get; set; }
         public int? VerifiedBy { get; set; }
+        public bool PointsAwarded { get; set; } = false;
+        public string? PhotoUrl { get; set; }
+        public int? AssignedTo { get; set; }
 
         public Tenant? Tenant { get; set; }
         public Bin? Bin { get; set; }
         public User? User { get; set; }
         public User? VerifyByUser { get; set; }
+        public User? AssignedUser { get; set; }
     }
 }

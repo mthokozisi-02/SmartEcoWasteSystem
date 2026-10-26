@@ -13,6 +13,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { CreateUserDto } from 'src/assets/interfaces/create-user-dto';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { UserService } from '@/core/services/user.service';
+import { AuthService } from '@/core/services/auth.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -53,8 +54,10 @@ import { ToastModule } from 'primeng/toast';
     styleUrl: './create-user.scss',
     providers: [MessageService, ConfirmationService, UserService]
 })
-export class CreateUser {
+export class CreateUser implements OnInit {
     users = signal<User[]>([]);
+    activeTenantName = signal<string>('');
+    activeTenantId = signal<number>(0);
 
     newUser: CreateUserDto = {} as CreateUserDto;
 
@@ -88,22 +91,34 @@ export class CreateUser {
     constructor(
         private messageService: MessageService,
         private userService: UserService,
+        private authService: AuthService,
         private confirmationService: ConfirmationService
     ) {}
 
     ngOnInit() {
-
+        this.activeTenantId.set(this.authService.getTenantId());
+        this.activeTenantName.set(this.authService.getTenantName());
         this.loadUsers();
     }
 
     saveUser() {
         this.isLoading = true;
 
+        // Ensure newly created user inherits the active logged-in tenant
+        const activeTenantId = this.authService.getTenantId();
+        if (activeTenantId && activeTenantId > 0) {
+            this.newUser.tenantId = activeTenantId;
+        }
+        const activeTenantCode = this.authService.getTenantCode();
+        if (activeTenantCode) {
+            this.newUser.tenantCode = activeTenantCode;
+        }
+
         this.userService
             .createUser(this.newUser)
             .pipe(
                 tap(() => {
-                    this.showSuccess('User created successfully');
+                    this.showSuccess('User created successfully in your organization');
                     this.loadUsers();
                 }),
                 catchError((err) => {
@@ -111,7 +126,9 @@ export class CreateUser {
                     return [];
                 }),
                 finalize(() => {
-                    ((this.isLoading = false), (this.createUserDialog = false), (this.newUser = {} as CreateUserDto));
+                    this.isLoading = false;
+                    this.createUserDialog = false;
+                    this.newUser = {} as CreateUserDto;
                 }),
                 takeUntilDestroyed(this.destroyRef)
             )
@@ -176,5 +193,3 @@ export class CreateUser {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
     }
 }
-
-

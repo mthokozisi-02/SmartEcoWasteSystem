@@ -1,6 +1,7 @@
 import { BinService } from '@/core/services/bin.service';
+import { AuthService } from '@/core/services/auth.service';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import L from 'leaflet';
@@ -61,7 +62,7 @@ import { BinResponseDto } from 'src/assets/interfaces/bin-response-dto';
     styleUrl: './manage-bins.scss',
     providers: [MessageService, ConfirmationService]
 })
-export class ManageBins {
+export class ManageBins implements AfterViewInit, OnDestroy {
     bins = signal<BinResponseDto[]>([]);
 
     selectedBin: BinResponseDto = {} as BinResponseDto;
@@ -74,6 +75,8 @@ export class ManageBins {
     markersLayer: L.LayerGroup = L.layerGroup();
 
     private destroyRef = inject(DestroyRef);
+    private authService = inject(AuthService);
+    isAdmin = (inject(AuthService).getUserRole() || '').toLowerCase() === 'admin' || (inject(AuthService).getUserRole() || '').toLowerCase() === 'superadmin';
 
     private showSuccess(message: string) {
         this.messageService.add({
@@ -102,7 +105,24 @@ export class ManageBins {
     ) {}
 
     ngAfterViewInit(): void {
+        const container = L.DomUtil.get('map');
+        if (container != null) {
+            (container as any)._leaflet_id = null;
+        }
+        if (this.map) {
+            this.map.remove();
+        }
+
         this.map = L.map('map').setView([0, 0], 2); // temporary default
+        // Configure default Leaflet icon URLs
+        delete (L.Icon.Default.prototype as any)._getIconUrl;
+        L.Icon.Default.mergeOptions({
+            iconRetinaUrl: 'images/marker-icon-2x.png',
+            iconUrl: 'images/marker-icon.png',
+            shadowUrl: 'images/marker-shadow.png'
+        });
+        // Add the markers layer to the map so bin icons are displayed
+        this.markersLayer.addTo(this.map);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
@@ -110,6 +130,12 @@ export class ManageBins {
 
         this.setUserLocation();
         this.loadBins();
+    }
+
+    ngOnDestroy(): void {
+        if (this.map) {
+            this.map.remove();
+        }
     }
 
     setUserLocation() {
@@ -127,7 +153,16 @@ export class ManageBins {
                 this.map.setView([lat, lng], 15);
 
                 // Add marker for user
-                L.marker([lat, lng]).addTo(this.map).bindPopup('You are here').openPopup();
+                const userLocationIcon = L.icon({
+                    iconRetinaUrl: 'images/marker-icon-2x.png',
+                    iconUrl: 'images/marker-icon.png',
+                    shadowUrl: 'images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                });
+                L.marker([lat, lng], { icon: userLocationIcon }).addTo(this.map).bindPopup('You are here').openPopup();
             },
             (error) => {
                 console.error('Error getting location:', error);

@@ -6,49 +6,80 @@ import { CommonModule } from '@angular/common';
     standalone: true,
     imports: [CommonModule],
     template: `
-        <section style="background: linear-gradient(135deg, #050c09 0%, #0a1f14 50%, #060e0a 100%); padding: 100px 0; border-top: 1px solid rgba(16,185,129,0.08); border-bottom: 1px solid rgba(16,185,129,0.08);">
-            <div class="w-full px-8 lg:px-16">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-10 text-center">
+        <section class="py-20 bg-slate-50/70 border-b border-slate-200/80 relative overflow-hidden">
 
-                    <div class="flex flex-col items-center gap-3">
-                        <div class="text-6xl font-black tracking-tighter" style="background: linear-gradient(135deg, #10b981, #6ee7b7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">2.01B</div>
-                        <div class="text-sm font-bold uppercase tracking-widest" style="color: rgba(209,250,229,0.5);">Tons of municipal waste per year</div>
-                        <p class="text-sm leading-relaxed" style="color: rgba(209,250,229,0.35);">Global production, rising every decade without intervention.</p>
+            <!-- Subtle Grid Accent -->
+            <div class="absolute inset-0 pointer-events-none opacity-40" style="background-image: radial-gradient(rgba(16,185,129,0.12) 1px, transparent 1px); background-size: 28px 28px;"></div>
+
+            <!-- Wide Container: 1600px, Minimal Padding -->
+            <div class="w-full px-4 sm:px-8 lg:px-12 max-w-[1600px] mx-auto relative z-10">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center mb-12">
+
+                    <!-- Metric 1 -->
+                    <div class="p-8 rounded-3xl bg-white border border-slate-200/90 shadow-md hover:shadow-2xl hover:border-emerald-400 hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center gap-3 group"
+                         data-aos="fade-up" data-aos-delay="100">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl font-bold group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-xs">
+                            <i class="fa-solid fa-earth-americas"></i>
+                        </div>
+                        <div class="text-5xl sm:text-6xl font-black tracking-tight text-emerald-600">2.01B</div>
+                        <div class="text-xs font-black uppercase tracking-widest text-slate-900">Tons Municipal Waste / Year</div>
+                        <p class="text-xs text-slate-600 leading-relaxed">Global production escalating without intelligent monitoring and multi-stakeholder intervention.</p>
                     </div>
 
-                    <div class="flex flex-col items-center gap-3">
-                        <div class="text-6xl font-black tracking-tighter" style="background: linear-gradient(135deg, #ef4444, #fca5a5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">33%</div>
-                        <div class="text-sm font-bold uppercase tracking-widest" style="color: rgba(209,250,229,0.5);">Unsafely managed or openly burned</div>
-                        <p class="text-sm leading-relaxed" style="color: rgba(209,250,229,0.35);">A third of all waste worldwide is dumped or incinerated without controls.</p>
+                    <!-- Metric 2 -->
+                    <div class="p-8 rounded-3xl bg-white border border-slate-200/90 shadow-md hover:shadow-2xl hover:border-rose-400 hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center gap-3 group"
+                         data-aos="fade-up" data-aos-delay="200">
+                        <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-2xl font-bold group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white transition-all duration-300 shadow-xs">
+                            <i class="fa-solid fa-fire-flame-curved"></i>
+                        </div>
+                        <div class="text-5xl sm:text-6xl font-black tracking-tight text-rose-600">33%</div>
+                        <div class="text-xs font-black uppercase tracking-widest text-slate-900">Unsafely Dumped or Burned</div>
+                        <p class="text-xs text-slate-600 leading-relaxed">A third of municipal waste is uncollected or openly burned without environmental controls.</p>
                     </div>
 
-                    <div class="flex flex-col items-center gap-3">
-                        <div class="text-6xl font-black tracking-tighter" style="background: linear-gradient(135deg, #06b6d4, #67e8f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">8M</div>
-                        <div class="text-sm font-bold uppercase tracking-widest" style="color: rgba(209,250,229,0.5);">Tons of plastic enter our oceans yearly</div>
-                        <p class="text-sm leading-relaxed" style="color: rgba(209,250,229,0.35);">Destroying marine life and coastal ecosystems across the globe.</p>
+                    <!-- Metric 3 -->
+                    <div class="p-8 rounded-3xl bg-white border border-slate-200/90 shadow-md hover:shadow-2xl hover:border-teal-400 hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center gap-3 group"
+                         data-aos="fade-up" data-aos-delay="300">
+                        <div class="w-14 h-14 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-2xl font-bold group-hover:scale-110 group-hover:bg-teal-600 group-hover:text-white transition-all duration-300 shadow-xs">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                        <div class="text-5xl sm:text-6xl font-black tracking-tight text-teal-600">100%</div>
+                        <div class="text-xs font-black uppercase tracking-widest text-slate-900">Camera Photo Proof Audit</div>
+                        <p class="text-xs text-slate-600 leading-relaxed">Every collection task is verified with live camera photo evidence before supervisory sign-off.</p>
                     </div>
 
-                    <div class="flex flex-col items-center gap-3">
-                        <div class="text-6xl font-black tracking-tighter" style="background: linear-gradient(135deg, #f59e0b, #fde68a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">$2.5T</div>
-                        <div class="text-sm font-bold uppercase tracking-widest" style="color: rgba(209,250,229,0.5);">Annual cost of poor waste management</div>
-                        <p class="text-sm leading-relaxed" style="color: rgba(209,250,229,0.35);">In health, productivity, and environmental remediation worldwide.</p>
+                    <!-- Metric 4 -->
+                    <div class="p-8 rounded-3xl bg-white border border-slate-200/90 shadow-md hover:shadow-2xl hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center gap-3 group"
+                         data-aos="fade-up" data-aos-delay="400">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl font-bold group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300 shadow-xs">
+                            <i class="fa-solid fa-star"></i>
+                        </div>
+                        <div class="text-5xl sm:text-6xl font-black tracking-tight text-amber-600">100 Pts</div>
+                        <div class="text-xs font-black uppercase tracking-widest text-slate-900">Citizen Eco-Points Engine</div>
+                        <p class="text-xs text-slate-600 leading-relaxed">Gamified reward engine awarding 100 Eco-Points for each verified community report.</p>
                     </div>
                 </div>
 
-                <!-- Divider with CTA -->
-                <div class="mt-20 pt-12 flex flex-col md:flex-row items-center justify-between gap-8" style="border-top: 1px solid rgba(16,185,129,0.1);">
-                    <div>
-                        <p class="text-xl font-bold mb-1" style="color: #d1fae5;">SmartEcoWaste addresses this head-on.</p>
-                        <p class="text-base text-balance" style="color: rgba(209,250,229,0.5);">Every report filed. Every bin monitored. Every point earned. It all adds up.</p>
+                <!-- ROI Banner in Clean Unified Style -->
+                <div class="p-6 sm:p-8 rounded-3xl bg-white border border-emerald-300/80 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6"
+                     data-aos="zoom-in" data-aos-delay="200">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-2xl font-black shadow-lg shadow-emerald-600/30 shrink-0">
+                            <i class="fa-solid fa-leaf"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-black text-slate-900">Measurable Operational & Ecological ROI</h4>
+                            <p class="text-sm text-slate-600">Commercial properties eliminate dumpster overflow complaints; municipal truck routes save up to 38% in fleet fuel consumption.</p>
+                        </div>
                     </div>
                     <a href="/landing#live-map-section"
-                       class="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base no-underline shrink-0 transition-all duration-300"
-                       style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #34d399;"
-                       onmouseover="this.style.background='rgba(16,185,129,0.2)'; this.style.borderColor='rgba(16,185,129,0.5)'"
-                       onmouseout="this.style.background='rgba(16,185,129,0.1)'; this.style.borderColor='rgba(16,185,129,0.25)'">
-                        See the live impact <i class="pi pi-arrow-right text-sm"></i>
+                       class="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl font-black text-sm bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-600 hover:text-white hover:scale-105 transition-all duration-300 shrink-0 no-underline shadow-xs">
+                        <span>Explore Real-Time Map</span>
+                        <i class="pi pi-arrow-right text-xs"></i>
                     </a>
                 </div>
+
             </div>
         </section>
     `

@@ -1,7 +1,8 @@
 import { BinService } from '@/core/services/bin.service';
 import { ReportService } from '@/core/services/report.service';
+import { UserService } from '@/core/services/user.service';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -19,6 +20,7 @@ import { RadioButtonModule } from 'primeng/radiobutton';
 import { RatingModule } from 'primeng/rating';
 import { RippleModule } from 'primeng/ripple';
 import { SelectModule } from 'primeng/select';
+import { ImageModule } from 'primeng/image';
 import { Table, TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
@@ -29,6 +31,7 @@ import { tap, catchError, finalize } from 'rxjs';
 import { StatusEnum } from 'src/assets/enums/status-enum';
 import { ReportResponseDto } from 'src/assets/interfaces/report-response-dto';
 import { VerifyBinDto } from 'src/assets/interfaces/verify-bin-dto';
+import { environment } from 'src/environments/environment';
 
 @Component({
     selector: 'app-manage-reports',
@@ -55,28 +58,30 @@ import { VerifyBinDto } from 'src/assets/interfaces/verify-bin-dto';
         IconFieldModule,
         ConfirmDialogModule,
         BadgeModule,
-        SelectModule
+        SelectModule,
+        ImageModule
     ],
     templateUrl: './manage-reports.html',
     styleUrl: './manage-reports.scss',
     providers: [MessageService, ConfirmationService]
 })
-export class ManageReports {
+export class ManageReports implements OnInit {
     reports = signal<ReportResponseDto[]>([]);
-
     filteredReports = signal<ReportResponseDto[]>([]);
+    staffUsers = signal<any[]>([]);
 
-    category: any;
-
+    category: any = 'All';
     verify: VerifyBinDto = {} as VerifyBinDto;
-
     submitted: boolean = false;
+    isLoading = false;
+    clearReportDialog = false;
+
+    // Assignment Dialog State
+    assignDialog = false;
+    selectedReportToAssign: ReportResponseDto | null = null;
+    selectedStaffUser: any = null;
 
     private destroyRef = inject(DestroyRef);
-
-    isLoading = false;
-
-    clearReportDialog = false;
 
     private showSuccess(message: string) {
         this.messageService.add({
@@ -101,6 +106,7 @@ export class ManageReports {
     constructor(
         private reportService: ReportService,
         private binService: BinService,
+        private userService: UserService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
         private router: Router
@@ -109,6 +115,14 @@ export class ManageReports {
     ngOnInit() {
         this.category = 'All';
         this.loadReports(this.category);
+        this.loadStaffUsers();
+    }
+
+    getImageUrl(url: string | undefined | null): string {
+        if (!url) return '';
+        if (url.startsWith('http://') || url.startsWith('https://')) return url;
+        const backendBase = environment.apiUrl.replace(/\/api\/?$/, '');
+        return `${backendBase}${url.startsWith('/') ? '' : '/'}${url}`;
     }
 
     private loadReports(report: any) {
@@ -118,17 +132,82 @@ export class ManageReports {
             .getAll()
             .pipe(
                 tap((res) => {
+                    const data = res.data || [];
+                    this.reports.set(data);
                     if (report == 'All') {
-                        this.filteredReports.set(res.data);
+                        this.filteredReports.set(data);
                     } else if (report == 'Emptied') {
-                        this.filteredReports.set(res.data.filter((r: ReportResponseDto) => r.status == StatusEnum.Emptied));
+                        this.filteredReports.set(data.filter((r: ReportResponseDto) => r.status == StatusEnum.Emptied));
                     } else if (report == 'Full') {
-                        this.filteredReports.set(res.data.filter((r: ReportResponseDto) => r.status == StatusEnum.Full));
+                        this.filteredReports.set(data.filter((r: ReportResponseDto) => r.status == StatusEnum.Full));
                     } else if (report == 'Overflowing') {
-                        this.filteredReports.set(res.data.filter((r: ReportResponseDto) => r.status == StatusEnum.Overflowing));
+                        this.filteredReports.set(data.filter((r: ReportResponseDto) => r.status == StatusEnum.Overflowing));
                     } else if (report == 'Damaged') {
-                        this.filteredReports.set(res.data.filter((r: ReportResponseDto) => r.status == StatusEnum.Damaged));
+                        this.filteredReports.set(data.filter((r: ReportResponseDto) => r.status == StatusEnum.Damaged));
                     }
+                }),
+                catchError((err) => {
+                    this.showError(err);
+                    return [];
+                }),
+                finalize(() => (this.isLoading = false)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
+    }
+
+    loadStaffUsers() {
+        this.userService
+            .getAll()
+            .pipe(
+                tap((res) => {
+                    const allUsers: any[] = res.data || [];
+                    // Filter for Staff members (or all users if needed)
+                    const staffOnly = allUsers
+                        .filter((u: any) => u.roleName === 'Staff' || (u.role && u.role.name === 'Staff'))
+                        .map((u: any) => ({
+                            id: u.id,
+                            name: u.name,
+                            email: u.email,
+                            displayName: `${u.name} (${u.email}) [${u.tenantName || 'Tenant #' + u.tenantId}]`
+                        }));
+                    this.staffUsers.set(staffOnly);
+                }),
+                catchError((err) => {
+                    console.error('Failed to load staff list', err);
+                    return [];
+                }),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
+    }
+
+    openAssignDialog(report: ReportResponseDto) {
+        this.selectedReportToAssign = report;
+        this.loadStaffUsers();
+        if (report.assignedTo) {
+            const match = this.staffUsers().find((s) => s.id === report.assignedTo);
+            this.selectedStaffUser = match || null;
+        } else {
+            this.selectedStaffUser = null;
+        }
+        this.assignDialog = true;
+    }
+
+    saveAssignment() {
+        if (!this.selectedReportToAssign || !this.selectedStaffUser) {
+            this.showError({ message: 'Please select a staff member to assign this report to.' });
+            return;
+        }
+
+        this.isLoading = true;
+        this.reportService
+            .assignReport(this.selectedReportToAssign.id, this.selectedStaffUser.id)
+            .pipe(
+                tap((res) => {
+                    this.showSuccess(res.message || 'Report assigned to staff member successfully.');
+                    this.assignDialog = false;
+                    this.loadReports(this.category);
                 }),
                 catchError((err) => {
                     this.showError(err);
@@ -165,7 +244,8 @@ export class ManageReports {
                             return [];
                         }),
                         finalize(() => {
-                            ((this.isLoading = false), (this.clearReportDialog = false));
+                            this.isLoading = false;
+                            this.clearReportDialog = false;
                         }),
                         takeUntilDestroyed(this.destroyRef)
                     )
@@ -180,6 +260,7 @@ export class ManageReports {
 
     hideDialog() {
         this.clearReportDialog = false;
+        this.assignDialog = false;
     }
 
     deleteReport(id: number) {
@@ -211,7 +292,6 @@ export class ManageReports {
 
     trimToThirdComma(text: string): string {
         if (!text) return '';
-
         const parts = text.split(',');
         return parts.slice(0, 3).join(',').trim();
     }
@@ -226,6 +306,8 @@ export class ManageReports {
                 return 'warn';
             case 'Damaged':
                 return 'help';
+            case 'Assigned':
+                return 'info';
             default:
                 return 'info';
         }
@@ -256,4 +338,3 @@ export class ManageReports {
         this.loadReports(this.category);
     }
 }
-

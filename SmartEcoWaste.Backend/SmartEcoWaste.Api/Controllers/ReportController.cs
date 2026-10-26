@@ -39,10 +39,34 @@ namespace SmartEcoWaste.Api.Controllers
             return res.IsSuccess ? Ok(res) : BadRequest(res);
         }
 
+        [Authorize(Roles = "Admin,Supervisor")]
+        [HttpPost("assign-report")]
+        public async Task<IActionResult> AssignReport([FromBody] AssignReportDto dto)
+        {
+            var adminId = GetCurrentUserId();
+            var res = await _reportBin.AssignReportAsync(adminId, dto);
+
+            if (res.IsSuccess)
+            {
+                await _auditLogService.LogAsync(
+                    GetCurrentTenantId(),
+                    adminId,
+                    GetCurrentUserEmail(),
+                    "AssignReport",
+                    "Report",
+                    dto.ReportId,
+                    $"Report {dto.ReportId} assigned to staff user {dto.StaffId}"
+                );
+                return Ok(res);
+            }
+
+            return BadRequest(res);
+        }
+
         /// <summary>
         /// Verified collections: Collector ID is derived strictly from authenticated token claims
         /// </summary>
-        [Authorize(Roles = "Admin,Supervisor,Contractor")]
+        [Authorize(Roles = "Admin,Supervisor,Staff,Contractor,SuperAdmin")]
         [HttpPost("verify-report")]
         public async Task<IActionResult> VerifyReport([FromBody] VerifyBinDto verify)
         {

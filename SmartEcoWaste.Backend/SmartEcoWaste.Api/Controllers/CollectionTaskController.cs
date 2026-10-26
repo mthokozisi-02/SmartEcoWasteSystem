@@ -70,6 +70,31 @@ namespace SmartEcoWaste.Api.Controllers
         }
 
         /// <summary>
+        /// Updates an existing collection task (re-assign, change due date, instructions, etc.).
+        /// Only Admins and Supervisors may re-assign or edit tasks.
+        /// </summary>
+        [Authorize(Roles = "Admin,Supervisor")]
+        [HttpPut("update-task/{taskId}")]
+        public async Task<IActionResult> UpdateTask(int taskId, [FromBody] UpdateCollectionTaskDto dto)
+        {
+            var res = await _taskService.UpdateTaskAsync(taskId, dto);
+            if (res.IsSuccess && res.Data != null)
+            {
+                await _auditLogService.LogAsync(
+                    GetCurrentTenantId(),
+                    GetCurrentUserId(),
+                    GetCurrentUserEmail(),
+                    "UpdateTask",
+                    "CollectionTask",
+                    taskId,
+                    $"Task {taskId} updated/reassigned to User {dto.AssignedUserId}"
+                );
+                return Ok(res);
+            }
+            return BadRequest(res);
+        }
+
+        /// <summary>
         /// Retrieves all collection tasks within the caller's tenant.
         /// Restricted to operational management: Admins and Supervisors.
         /// </summary>
@@ -83,9 +108,9 @@ namespace SmartEcoWaste.Api.Controllers
 
         /// <summary>
         /// Retrieves only the tasks assigned to the currently authenticated user.
-        /// Available to Contractors, Supervisors, and Admins.
+        /// Available to Contractors, Supervisors, Admins, and Staff.
         /// </summary>
-        [Authorize(Roles = "Admin,Supervisor,Contractor")]
+        [Authorize(Roles = "Admin,Supervisor,Contractor,Staff")]
         [HttpGet("get-my-tasks")]
         public async Task<IActionResult> GetMyTasks()
         {
@@ -96,10 +121,10 @@ namespace SmartEcoWaste.Api.Controllers
 
         /// <summary>
         /// Updates the status of a collection task.
-        /// Contractors may only update tasks assigned to themselves.
+        /// Contractors and Staff may only update tasks assigned to themselves.
         /// Admins and Supervisors may update any task within the tenant.
         /// </summary>
-        [Authorize(Roles = "Admin,Supervisor,Contractor")]
+        [Authorize(Roles = "Admin,Supervisor,Contractor,Staff")]
         [HttpPut("update-status/{taskId}")]
         public async Task<IActionResult> UpdateStatus(int taskId, [FromQuery] CollectionTaskStatus status)
         {
@@ -124,10 +149,10 @@ namespace SmartEcoWaste.Api.Controllers
 
         /// <summary>
         /// Submits a field inspection log for a bin.
-        /// Only Contractors and Supervisors may submit on-site inspection results.
+        /// Contractors, Staff, and Supervisors may submit on-site inspection results.
         /// The inspector identity is securely derived from the JWT token.
         /// </summary>
-        [Authorize(Roles = "Admin,Supervisor,Contractor")]
+        [Authorize(Roles = "Admin,Supervisor,Contractor,Staff")]
         [HttpPost("submit-inspection")]
         public async Task<IActionResult> SubmitInspection([FromBody] SubmitInspectionDto dto)
         {

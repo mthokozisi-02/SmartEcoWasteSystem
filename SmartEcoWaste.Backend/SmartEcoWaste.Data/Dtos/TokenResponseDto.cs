@@ -16,5 +16,6 @@ namespace SmartEcoWaste.Data.Dtos
         public string? OrganizationType { get; set; }
         public string? Role { get; set; }
         public string? UserName { get; set; }
+        public string? Email { get; set; }
     }
 }

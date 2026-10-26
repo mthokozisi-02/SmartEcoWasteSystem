@@ -14,4 +14,6 @@ export interface AuthData {
     organizationType?: 'CommercialMall' | 'ResidentialEstate' | 'Municipality' | string;
     role?: string;
     userName?: string;
+    userId?: number;
+    email?: string;
 }

@@ -252,15 +252,13 @@ export class MunicipalityDashboard implements OnInit {
         this.taskService.getAllTasks().subscribe({
             next: (res: any) => {
                 if (res.isSuccess && res.data) {
-                    this.fleetTasks = res.data.slice(0, 4);
+                    this.fleetTasks = res.data.slice(0, 5);
+                } else {
+                    this.fleetTasks = [];
                 }
             },
             error: () => {
-                this.fleetTasks = [
-                    { id: 201, title: 'Ward 1 Central Transit Solar Bins Collection', contractorName: 'Metro Fleet Truck #02', status: 'Completed', scheduledAt: new Date().toISOString(), dueDate: new Date().toISOString(), binId: 1 },
-                    { id: 202, title: 'Ward 2 Curbside North Route B Sweep', contractorName: 'Metro Fleet Truck #04', status: 'InProgress', scheduledAt: new Date().toISOString(), dueDate: new Date(Date.now() + 3600000).toISOString(), binId: 2 },
-                    { id: 203, title: 'Ward 4 Industrial Sector Heavy Compactors', contractorName: 'Metro Fleet Truck #07', status: 'Scheduled', scheduledAt: new Date().toISOString(), dueDate: new Date(Date.now() + 7200000).toISOString(), binId: 3 }
-                ];
+                this.fleetTasks = [];
             }
         });
     }

@@ -58,7 +58,7 @@ namespace SmartEcoWaste.Services.Services
                 TenantId = bin.TenantId,
                 BinId = dto.BinId,
                 AssignedUserId = dto.AssignedUserId,
-                ContractorName = dto.ContractorName,
+                ContractorName = !string.IsNullOrWhiteSpace(dto.ContractorName) ? dto.ContractorName : assignedUserName,
                 Title = dto.Title,
                 Instructions = dto.Instructions,
                 Status = CollectionTaskStatus.Pending,
@@ -77,7 +77,7 @@ namespace SmartEcoWaste.Services.Services
                 ZoneName = bin.WasteZone?.Name,
                 PropertyName = bin.WasteZone?.Property?.Name,
                 AssignedUserId = task.AssignedUserId,
-                AssignedUserName = assignedUserName,
+                AssignedUserName = assignedUserName ?? task.ContractorName,
                 ContractorName = task.ContractorName,
                 Title = task.Title,
                 Instructions = task.Instructions,
@@ -87,6 +87,100 @@ namespace SmartEcoWaste.Services.Services
             };
 
             return ServiceResponse<ResponseCollectionTaskDto>.Success(response, "Collection task created successfully");
+        }
+
+        public async Task<ServiceResponse<ResponseCollectionTaskDto>> UpdateTaskAsync(int taskId, UpdateCollectionTaskDto dto)
+        {
+            var task = await _context.CollectionTasks
+                .Include(t => t.Bin)
+                .ThenInclude(b => b.WasteZone)
+                .ThenInclude(w => w!.Property)
+                .Include(t => t.AssignedUser)
+                .FirstOrDefaultAsync(t => t.Id == taskId);
+
+            if (task == null)
+            {
+                return ServiceResponse<ResponseCollectionTaskDto>.Fail("Task not found.");
+            }
+
+            if (dto.BinId > 0 && dto.BinId != task.BinId)
+            {
+                var bin = await _context.Bins.FirstOrDefaultAsync(b => b.Id == dto.BinId);
+                if (bin == null)
+                {
+                    return ServiceResponse<ResponseCollectionTaskDto>.Fail("Target bin not found.");
+                }
+                task.BinId = dto.BinId;
+            }
+
+            if (dto.AssignedUserId.HasValue)
+            {
+                var staffUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.AssignedUserId.Value && !u.IsDeleted);
+                if (staffUser != null)
+                {
+                    task.AssignedUserId = dto.AssignedUserId.Value;
+                    task.ContractorName = staffUser.Name;
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(dto.ContractorName))
+            {
+                task.ContractorName = dto.ContractorName;
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Title))
+            {
+                task.Title = dto.Title;
+            }
+
+            if (dto.Instructions != null)
+            {
+                task.Instructions = dto.Instructions;
+            }
+
+            if (dto.DueDate != default)
+            {
+                task.DueDate = dto.DueDate;
+            }
+
+            if (dto.Status.HasValue)
+            {
+                task.Status = dto.Status.Value;
+                if (task.Status == CollectionTaskStatus.Completed && !task.CompletedAt.HasValue)
+                {
+                    task.CompletedAt = DateTime.UtcNow;
+                }
+            }
+
+            task.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            var updatedTask = await _context.CollectionTasks
+                .Include(t => t.Bin)
+                .ThenInclude(b => b.WasteZone)
+                .ThenInclude(w => w!.Property)
+                .Include(t => t.AssignedUser)
+                .FirstOrDefaultAsync(t => t.Id == taskId);
+
+            var response = new ResponseCollectionTaskDto
+            {
+                Id = updatedTask!.Id,
+                BinId = updatedTask.BinId,
+                BinTag = updatedTask.Bin?.BinTag ?? string.Empty,
+                ZoneName = updatedTask.Bin?.WasteZone?.Name,
+                PropertyName = updatedTask.Bin?.WasteZone?.Property?.Name,
+                AssignedUserId = updatedTask.AssignedUserId,
+                AssignedUserName = updatedTask.AssignedUser?.Name ?? updatedTask.ContractorName,
+                ContractorName = updatedTask.ContractorName,
+                Title = updatedTask.Title,
+                Instructions = updatedTask.Instructions,
+                Status = updatedTask.Status,
+                ScheduledAt = updatedTask.ScheduledAt,
+                StartedAt = updatedTask.StartedAt,
+                CompletedAt = updatedTask.CompletedAt,
+                DueDate = updatedTask.DueDate
+            };
+
+            return ServiceResponse<ResponseCollectionTaskDto>.Success(response, "Task updated successfully");
         }
 
         public async Task<ServiceResponse<List<ResponseCollectionTaskDto>>> GetAllTasksAsync()
@@ -113,7 +207,8 @@ namespace SmartEcoWaste.Services.Services
                     ScheduledAt = t.ScheduledAt,
                     StartedAt = t.StartedAt,
                     CompletedAt = t.CompletedAt,
-                    DueDate = t.DueDate
+                    DueDate = t.DueDate,
+                    PhotoProofUrl = t.InspectionLogs.OrderByDescending(l => l.CreatedAt).Select(l => l.PhotoProofUrl).FirstOrDefault()
                 })
                 .ToListAsync();
 
@@ -145,7 +240,8 @@ namespace SmartEcoWaste.Services.Services
                     ScheduledAt = t.ScheduledAt,
                     StartedAt = t.StartedAt,
                     CompletedAt = t.CompletedAt,
-                    DueDate = t.DueDate
+                    DueDate = t.DueDate,
+                    PhotoProofUrl = t.InspectionLogs.OrderByDescending(l => l.CreatedAt).Select(l => l.PhotoProofUrl).FirstOrDefault()
                 })
                 .ToListAsync();
 
@@ -209,6 +305,7 @@ namespace SmartEcoWaste.Services.Services
             else if (status == CollectionTaskStatus.Completed)
             {
                 task.CompletedAt = DateTime.UtcNow;
+                await ResolveActiveReportsForBinAsync(task.BinId, task.TenantId, task.AssignedUserId ?? callerUserId);
             }
 
             await _context.SaveChangesAsync();
@@ -344,14 +441,18 @@ namespace SmartEcoWaste.Services.Services
                 // For any other condition with moderate fill, keep current status
             }
 
-            // 8. If linked to a task, update its status but do not set CompletedAt here
+            // 8. If linked to a task, update its status
             if (dto.CollectionTaskId.HasValue)
             {
                 var task = await _context.CollectionTasks.FindAsync(dto.CollectionTaskId.Value);
                 if (task != null)
                 {
                     task.Status = log.HasAnomaly ? CollectionTaskStatus.RequiresApproval : CollectionTaskStatus.Completed;
-                    // Do not set CompletedAt; let task completion flow handle it
+                    if (task.Status == CollectionTaskStatus.Completed)
+                    {
+                        task.CompletedAt ??= DateTime.UtcNow;
+                        await ResolveActiveReportsForBinAsync(task.BinId, task.TenantId, inspectorUserId);
+                    }
                 }
             }
 
@@ -433,19 +534,29 @@ namespace SmartEcoWaste.Services.Services
                 return ServiceResponse<bool>.Fail("Inspection log not found in your organization");
             }
 
-            // 2. Cross-tenant check: Supervisor must belong to current tenant and have Supervisor role
+            // 2. Cross-tenant check: Supervisor/Admin must belong to current tenant (or SuperAdmin) and have appropriate role
             var supervisor = await _context.Users
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Id == supervisorUserId && !u.IsDeleted);
 
-            if (supervisor == null || supervisor.TenantId != log.TenantId)
+            if (supervisor == null)
             {
-                return ServiceResponse<bool>.Fail("Supervisor not found in your organization");
+                return ServiceResponse<bool>.Fail("User not found");
             }
 
-            if (!string.Equals(supervisor.Role?.Name, "Supervisor", StringComparison.OrdinalIgnoreCase))
+            var roleName = supervisor.Role?.Name ?? string.Empty;
+            var isSuperAdmin = string.Equals(roleName, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+            var isAdmin = string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase);
+            var isSupervisor = string.Equals(roleName, "Supervisor", StringComparison.OrdinalIgnoreCase);
+
+            if (!isSuperAdmin && !isAdmin && !isSupervisor)
             {
-                return ServiceResponse<bool>.Fail("User does not have Supervisor privileges to approve anomalies");
+                return ServiceResponse<bool>.Fail("User does not have Supervisor or Admin privileges to approve anomalies");
+            }
+
+            if (!isSuperAdmin && supervisor.TenantId != log.TenantId)
+            {
+                return ServiceResponse<bool>.Fail("Supervisor or Admin does not belong to the organization for this inspection");
             }
 
             log.IsApproved = true;
@@ -453,18 +564,112 @@ namespace SmartEcoWaste.Services.Services
             log.ApprovedAt = DateTime.UtcNow;
             if (!string.IsNullOrWhiteSpace(dto.ResolutionNotes))
             {
-                log.Notes = $"{log.Notes} | Supervisor Resolution: {dto.ResolutionNotes}".TrimStart(' ', '|');
+                log.Notes = $"{log.Notes} | Resolution by {roleName}: {dto.ResolutionNotes}".TrimStart(' ', '|');
             }
 
             // Update task status only if it is awaiting approval
             if (log.CollectionTask != null && log.CollectionTask.Status == CollectionTaskStatus.RequiresApproval)
             {
                 log.CollectionTask.Status = CollectionTaskStatus.Completed;
-                // Do not set CompletedAt here; let the normal flow handle it
+                log.CollectionTask.CompletedAt ??= DateTime.UtcNow;
+                await ResolveActiveReportsForBinAsync(log.BinId, log.TenantId, supervisorUserId);
             }
 
             await _context.SaveChangesAsync();
-            return ServiceResponse<bool>.Success(true, "Anomaly approved and resolved by supervisor");
+            return ServiceResponse<bool>.Success(true, "Anomaly approved and resolved successfully");
+        }
+
+        public async Task<ServiceResponse<bool>> RejectAnomalyAsync(int supervisorUserId, RejectInspectionAnomalyDto dto)
+        {
+            var log = await _context.BinInspectionLogs
+                .Include(l => l.CollectionTask)
+                .FirstOrDefaultAsync(l => l.Id == dto.InspectionLogId);
+
+            if (log == null)
+            {
+                return ServiceResponse<bool>.Fail("Inspection log not found in your organization");
+            }
+
+            var supervisor = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == supervisorUserId && !u.IsDeleted);
+
+            if (supervisor == null)
+            {
+                return ServiceResponse<bool>.Fail("User not found");
+            }
+
+            var roleName = supervisor.Role?.Name ?? string.Empty;
+            var isSuperAdmin = string.Equals(roleName, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+            var isAdmin = string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase);
+            var isSupervisor = string.Equals(roleName, "Supervisor", StringComparison.OrdinalIgnoreCase);
+
+            if (!isSuperAdmin && !isAdmin && !isSupervisor)
+            {
+                return ServiceResponse<bool>.Fail("User does not have Supervisor or Admin privileges to reject anomalies");
+            }
+
+            if (!isSuperAdmin && supervisor.TenantId != log.TenantId)
+            {
+                return ServiceResponse<bool>.Fail("Supervisor or Admin does not belong to the organization for this inspection");
+            }
+
+            log.IsApproved = false;
+            log.ApprovedByUserId = supervisorUserId;
+            log.ApprovedAt = DateTime.UtcNow;
+            if (!string.IsNullOrWhiteSpace(dto.RejectionReason))
+            {
+                log.Notes = $"{log.Notes} | Rejected by {roleName}: {dto.RejectionReason}".TrimStart(' ', '|');
+            }
+
+            // Return task to Pending so staff member sees it needs rework
+            if (log.CollectionTask != null)
+            {
+                log.CollectionTask.Status = CollectionTaskStatus.Pending;
+                log.CollectionTask.Instructions = $"REWORK REQUIRED: {dto.RejectionReason} (Original: {log.CollectionTask.Instructions})";
+            }
+
+            await _context.SaveChangesAsync();
+            return ServiceResponse<bool>.Success(true, "Inspection / Anomaly rejected and returned for rework");
+        }
+
+        private async Task ResolveActiveReportsForBinAsync(int binId, int tenantId, int resolverUserId)
+        {
+            var activeReports = await _context.Reports
+                .Where(r => r.BinId == binId && r.TenantId == tenantId &&
+                            r.Status != ReportStatus.Resolved &&
+                            r.Status != ReportStatus.Closed &&
+                            r.Status != ReportStatus.Rejected)
+                .ToListAsync();
+
+            foreach (var r in activeReports)
+            {
+                r.Status = ReportStatus.Resolved;
+                r.VerifiedAt = DateTime.UtcNow;
+                r.VerifiedBy = resolverUserId;
+                r.UpdatedAt = DateTime.UtcNow;
+
+                if (r.UserId.HasValue && r.UserId.Value > 0 && !r.PointsAwarded)
+                {
+                    var userPoints = await _context.UsersPoints
+                        .FirstOrDefaultAsync(up => up.UserId == r.UserId.Value && up.TenantId == tenantId);
+
+                    if (userPoints == null)
+                    {
+                        _context.UsersPoints.Add(new UserPoints
+                        {
+                            TenantId = tenantId,
+                            UserId = r.UserId.Value,
+                            Points = 100
+                        });
+                    }
+                    else
+                    {
+                        userPoints.Points += 100;
+                    }
+                    r.PointsAwarded = true;
+                }
+            }
         }
 
     }
