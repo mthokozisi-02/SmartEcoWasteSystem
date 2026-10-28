@@ -12,6 +12,13 @@ namespace SmartEcoWaste.Data.Entities
         public string PasswordHash { get; set; }
         public int RoleId { get; set; } = 2;
         public bool IsEmailConfirmed { get; set; } = false;
+        public string? EmailConfirmationToken { get; set; }
+        public DateTime? EmailConfirmationTokenExpiry { get; set; }
+        public bool IsApproved { get; set; } = false;
+        public DateTime? ApprovedAt { get; set; }
+        public int? ApprovedByUserId { get; set; }
+        public string? PasswordResetToken { get; set; }
+        public DateTime? PasswordResetTokenExpiry { get; set; }
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
 

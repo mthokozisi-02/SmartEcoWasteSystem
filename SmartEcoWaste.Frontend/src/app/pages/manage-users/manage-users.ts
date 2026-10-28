@@ -60,6 +60,7 @@ import { User } from 'src/assets/interfaces/user';
 export class ManageUsers implements OnInit {
     users = signal<User[]>([]);
     candidateUsers = signal<any[]>([]);
+    pendingUsers = signal<any[]>([]);
 
     roles: Roles[] = [];
     selectedRole: Roles = {} as Roles;
@@ -72,6 +73,9 @@ export class ManageUsers implements OnInit {
     // Add Existing User as Staff Dialog
     addStaffDialog = false;
     selectedCandidateUser: any = null;
+
+    // Pending User Approvals Dialog
+    pendingDialog = false;
 
     private destroyRef = inject(DestroyRef);
 
@@ -103,6 +107,79 @@ export class ManageUsers implements OnInit {
 
     ngOnInit() {
         this.loadUsers();
+        this.loadPendingUsers();
+    }
+
+    loadPendingUsers() {
+        this.userService
+            .getPendingApprovals()
+            .pipe(
+                tap((res) => {
+                    this.pendingUsers.set(res?.data || []);
+                }),
+                catchError(() => []),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
+    }
+
+    openPendingDialog() {
+        this.loadPendingUsers();
+        this.pendingDialog = true;
+    }
+
+    approveRegistration(user: any) {
+        this.confirmationService.confirm({
+            message: `Approve account for '${user.name}' (${user.email})? They will be granted access to your organization workspace.`,
+            header: 'Approve User Registration',
+            icon: 'pi pi-check-circle',
+            accept: () => {
+                this.isLoading = true;
+                this.userService
+                    .approveUser(user.id)
+                    .pipe(
+                        tap((res) => {
+                            this.showSuccess(res.message || `'${user.name}' approved successfully.`);
+                            this.loadPendingUsers();
+                            this.loadUsers();
+                        }),
+                        catchError((err) => {
+                            this.showError(err);
+                            return [];
+                        }),
+                        finalize(() => (this.isLoading = false)),
+                        takeUntilDestroyed(this.destroyRef)
+                    )
+                    .subscribe();
+            }
+        });
+    }
+
+    rejectRegistration(user: any) {
+        this.confirmationService.confirm({
+            message: `Reject and delete registration request for '${user.name}'?`,
+            header: 'Reject Registration',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.isLoading = true;
+                this.userService
+                    .rejectUser(user.id)
+                    .pipe(
+                        tap((res) => {
+                            this.showSuccess(res.message || 'Registration rejected.');
+                            this.loadPendingUsers();
+                            this.loadUsers();
+                        }),
+                        catchError((err) => {
+                            this.showError(err);
+                            return [];
+                        }),
+                        finalize(() => (this.isLoading = false)),
+                        takeUntilDestroyed(this.destroyRef)
+                    )
+                    .subscribe();
+            }
+        });
     }
 
     loadUsers() {
@@ -292,5 +369,6 @@ export class ManageUsers implements OnInit {
     hideDialog() {
         this.updateUserDialog = false;
         this.addStaffDialog = false;
+        this.pendingDialog = false;
     }
 }

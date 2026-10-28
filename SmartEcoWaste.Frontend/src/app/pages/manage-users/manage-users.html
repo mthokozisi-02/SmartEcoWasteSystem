@@ -26,6 +26,12 @@
                     </p-iconfield>
                 </div>
                 <div class="flex items-center gap-2">
+                    <p-button 
+                        [label]="'Pending Registrations' + (pendingUsers().length > 0 ? ' (' + pendingUsers().length + ')' : '')" 
+                        icon="pi pi-user-edit" 
+                        [severity]="pendingUsers().length > 0 ? 'warn' : 'secondary'" 
+                        (click)="openPendingDialog()" 
+                    />
                     <p-button label="Add Staff Member" icon="pi pi-user-plus" severity="success" (click)="openAddStaffDialog()" />
                 </div>
             </div>
@@ -115,5 +121,62 @@
     <ng-template #footer>
         <p-button label="Cancel" icon="pi pi-times" severity="secondary" text (click)="addStaffDialog = false" />
         <p-button label="Add as Staff" icon="pi pi-user-check" severity="success" [disabled]="!selectedCandidateUser" (click)="saveAddStaff()" />
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="pendingDialog" [style]="{ width: '750px' }" header="Pending User Registrations" [modal]="true">
+    <ng-template #content>
+        <div class="py-2">
+            <p class="text-sm text-muted-color mb-4">
+                Review users who have submitted a registration request for your organization workspace. Approved accounts will receive an email confirmation and be permitted to sign in.
+            </p>
+
+            <div *ngIf="pendingUsers().length === 0" class="text-center py-8 text-muted-color">
+                <i class="pi pi-check-circle text-3xl mb-2 text-emerald-500 block"></i>
+                <p class="font-medium text-sm m-0">No registrations are currently pending approval.</p>
+            </div>
+
+            <div *ngIf="pendingUsers().length > 0" class="border rounded-xl overflow-hidden">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 border-b text-xs uppercase font-bold text-slate-700">
+                        <tr>
+                            <th class="p-3">User</th>
+                            <th class="p-3">Organization</th>
+                            <th class="p-3">Email Verified</th>
+                            <th class="p-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr *ngFor="let p of pendingUsers()" class="hover:bg-slate-50 transition-colors">
+                            <td class="p-3">
+                                <div class="font-bold text-slate-900">{{ p.name }}</div>
+                                <div class="text-xs text-slate-500">{{ p.email }}</div>
+                            </td>
+                            <td class="p-3">
+                                <span class="text-xs bg-slate-100 px-2 py-1 rounded-md text-slate-700">{{ p.tenantName }}</span>
+                            </td>
+                            <td class="p-3">
+                                <span *ngIf="p.isEmailConfirmed" class="text-xs font-semibold text-emerald-600 inline-flex items-center gap-1">
+                                    <i class="pi pi-check"></i> Verified
+                                </span>
+                                <span *ngIf="!p.isEmailConfirmed" class="text-xs font-semibold text-amber-600 inline-flex items-center gap-1">
+                                    <i class="pi pi-clock"></i> Unverified
+                                </span>
+                            </td>
+                            <td class="p-3 text-right">
+                                <div class="inline-flex gap-2">
+                                    <p-button icon="pi pi-check" label="Approve" severity="success" size="small" (click)="approveRegistration(p)" />
+                                    <p-button icon="pi pi-times" label="Reject" severity="danger" size="small" [outlined]="true" (click)="rejectRegistration(p)" />
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </ng-template>
+
+    <ng-template #footer>
+        <p-button label="Close" icon="pi pi-times" severity="secondary" text (click)="pendingDialog = false" />
     </ng-template>
 </p-dialog>

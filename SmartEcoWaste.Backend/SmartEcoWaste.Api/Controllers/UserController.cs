@@ -58,8 +58,130 @@ namespace SmartEcoWaste.Api.Controllers
         [HttpPost("user-login")]
         public async Task<IActionResult> Login([FromBody] LoginDto user)
         {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
             var res = await _userService.LoginAsync(user);
+
+            if (res.IsSuccess && res.Data != null)
+            {
+                await _auditLogService.LogAsync(
+                    res.Data.TenantId,
+                    res.Data.UserId,
+                    user.Email,
+                    "LoginSuccess",
+                    "User",
+                    res.Data.UserId,
+                    $"User {user.Email} authenticated successfully",
+                    ip
+                );
+                return Ok(res);
+            }
+
+            await _auditLogService.LogAsync(
+                user.TenantId ?? 0,
+                null,
+                user.Email,
+                "LoginFailed",
+                "User",
+                null,
+                $"Authentication failed for {user.Email}: {res.Message}",
+                ip
+            );
+            return Unauthorized(res);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("verify-email")]
+        public async Task<IActionResult> VerifyEmail([FromQuery] string email, [FromQuery] string token)
+        {
+            var res = await _userService.VerifyEmailAsync(email, token);
             return res.IsSuccess ? Ok(res) : BadRequest(res);
+        }
+
+        [AllowAnonymous]
+        [EnableRateLimiting("AuthRateLimit")]
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+        {
+            var res = await _userService.ForgotPasswordAsync(dto.Email);
+            return Ok(res);
+        }
+
+        [AllowAnonymous]
+        [EnableRateLimiting("AuthRateLimit")]
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordWithTokenDto dto)
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var res = await _userService.ResetPasswordWithTokenAsync(dto);
+            if (res.IsSuccess)
+            {
+                await _auditLogService.LogAsync(
+                    0,
+                    null,
+                    dto.Email,
+                    "PasswordResetSuccess",
+                    "User",
+                    null,
+                    $"Password reset completed for {dto.Email}",
+                    ip
+                );
+                return Ok(res);
+            }
+
+            return BadRequest(res);
+        }
+
+        [Authorize(Roles = "Admin,Supervisor,SuperAdmin")]
+        [HttpGet("pending-approvals")]
+        public async Task<IActionResult> GetPendingApprovals()
+        {
+            var adminId = GetCurrentUserId();
+            var res = await _userService.GetPendingUsersAsync(adminId);
+            return res.IsSuccess ? Ok(res) : BadRequest(res);
+        }
+
+        [Authorize(Roles = "Admin,SuperAdmin")]
+        [HttpPost("users/{id}/approve")]
+        public async Task<IActionResult> ApproveUser(int id)
+        {
+            var adminId = GetCurrentUserId();
+            var res = await _userService.ApproveUserAsync(adminId, id);
+            if (res.IsSuccess)
+            {
+                await _auditLogService.LogAsync(
+                    GetCurrentTenantId(),
+                    adminId,
+                    GetCurrentUserEmail(),
+                    "ApproveUser",
+                    "User",
+                    id,
+                    $"User registration {id} approved by admin {adminId}"
+                );
+                return Ok(res);
+            }
+            return BadRequest(res);
+        }
+
+        [Authorize(Roles = "Admin,SuperAdmin")]
+        [HttpPost("users/{id}/reject")]
+        public async Task<IActionResult> RejectUser(int id)
+        {
+            var adminId = GetCurrentUserId();
+            var res = await _userService.RejectUserAsync(adminId, id);
+            if (res.IsSuccess)
+            {
+                await _auditLogService.LogAsync(
+                    GetCurrentTenantId(),
+                    adminId,
+                    GetCurrentUserEmail(),
+                    "RejectUser",
+                    "User",
+                    id,
+                    $"User registration {id} rejected by admin {adminId}"
+                );
+                return Ok(res);
+            }
+            return BadRequest(res);
         }
 
         [Authorize(Roles = "Admin,Supervisor")]

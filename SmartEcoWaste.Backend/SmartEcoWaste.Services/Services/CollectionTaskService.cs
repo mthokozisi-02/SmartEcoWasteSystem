@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using SmartEcoWaste.Data.Dtos;
 using SmartEcoWaste.Data.Entities;
 using SmartEcoWaste.Data.Enums;
@@ -14,10 +15,14 @@ namespace SmartEcoWaste.Services.Services
     public class CollectionTaskService : ICollectionTaskService
     {
         private readonly SmartEcoWasteDbContext _context;
+        private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
-        public CollectionTaskService(SmartEcoWasteDbContext context)
+        public CollectionTaskService(SmartEcoWasteDbContext context, IEmailService emailService, IConfiguration configuration)
         {
             _context = context;
+            _emailService = emailService;
+            _configuration = configuration;
         }
 
         public async Task<ServiceResponse<ResponseCollectionTaskDto>> CreateTaskAsync(CreateCollectionTaskDto dto)
@@ -35,9 +40,10 @@ namespace SmartEcoWaste.Services.Services
 
             // 2. Cross-tenant check: Assigned user must belong to the SAME tenant as the bin
             string? assignedUserName = null;
+            User? assignedUser = null;
             if (dto.AssignedUserId.HasValue)
             {
-                var assignedUser = await _context.Users
+                assignedUser = await _context.Users
                     .FirstOrDefaultAsync(u => u.Id == dto.AssignedUserId.Value && !u.IsDeleted);
 
                 if (assignedUser == null)
@@ -68,6 +74,41 @@ namespace SmartEcoWaste.Services.Services
 
             _context.CollectionTasks.Add(task);
             await _context.SaveChangesAsync();
+
+            // Notify assigned staff member via email
+            if (assignedUser != null && !string.IsNullOrWhiteSpace(assignedUser.Email))
+            {
+                try
+                {
+                    var locationParts = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(bin.Area)) locationParts.Add(bin.Area);
+                    if (bin.WasteZone != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(bin.WasteZone.Name)) locationParts.Add(bin.WasteZone.Name);
+                        if (bin.WasteZone.Property != null && !string.IsNullOrWhiteSpace(bin.WasteZone.Property.Name))
+                            locationParts.Add(bin.WasteZone.Property.Name);
+                    }
+                    var locationStr = locationParts.Count > 0 ? string.Join(", ", locationParts) : "Assigned Bin Location";
+                    var binTag = !string.IsNullOrWhiteSpace(bin.BinTag) ? bin.BinTag : $"BIN-{bin.Id}";
+                    var clientBaseUrl = _configuration["AppSettings:ClientBaseUrl"] ?? "http://localhost:4200";
+                    var tasksUrl = $"{clientBaseUrl.TrimEnd('/')}/manage-tasks";
+
+                    _ = _emailService.SendTaskAssignedNotificationAsync(
+                        assignedUser.Email,
+                        assignedUser.Name,
+                        task.Title,
+                        binTag,
+                        locationStr,
+                        task.Instructions,
+                        task.DueDate,
+                        tasksUrl
+                    );
+                }
+                catch
+                {
+                    // Non-blocking notification
+                }
+            }
 
             var response = new ResponseCollectionTaskDto
             {
@@ -105,22 +146,30 @@ namespace SmartEcoWaste.Services.Services
 
             if (dto.BinId > 0 && dto.BinId != task.BinId)
             {
-                var bin = await _context.Bins.FirstOrDefaultAsync(b => b.Id == dto.BinId);
+                var bin = await _context.Bins.FirstOrDefaultAsync(b => b.Id == dto.BinId && b.TenantId == task.TenantId && !b.IsDeleted);
                 if (bin == null)
                 {
-                    return ServiceResponse<ResponseCollectionTaskDto>.Fail("Target bin not found.");
+                    return ServiceResponse<ResponseCollectionTaskDto>.Fail("Target bin does not exist or does not belong to your organization.");
                 }
                 task.BinId = dto.BinId;
             }
 
+            User? newlyAssignedStaff = null;
             if (dto.AssignedUserId.HasValue)
             {
-                var staffUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.AssignedUserId.Value && !u.IsDeleted);
-                if (staffUser != null)
+                var staffUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.AssignedUserId.Value && u.TenantId == task.TenantId && !u.IsDeleted);
+                if (staffUser == null)
                 {
-                    task.AssignedUserId = dto.AssignedUserId.Value;
-                    task.ContractorName = staffUser.Name;
+                    return ServiceResponse<ResponseCollectionTaskDto>.Fail("Assigned staff member does not exist or does not belong to your organization.");
                 }
+
+                if (task.AssignedUserId != dto.AssignedUserId.Value)
+                {
+                    newlyAssignedStaff = staffUser;
+                }
+
+                task.AssignedUserId = dto.AssignedUserId.Value;
+                task.ContractorName = staffUser.Name;
             }
             else if (!string.IsNullOrWhiteSpace(dto.ContractorName))
             {
@@ -153,6 +202,44 @@ namespace SmartEcoWaste.Services.Services
 
             task.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+
+            // Notify newly assigned staff member
+            if (newlyAssignedStaff != null && !string.IsNullOrWhiteSpace(newlyAssignedStaff.Email))
+            {
+                try
+                {
+                    var locationParts = new List<string>();
+                    if (task.Bin != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(task.Bin.Area)) locationParts.Add(task.Bin.Area);
+                        if (task.Bin.WasteZone != null)
+                        {
+                            if (!string.IsNullOrWhiteSpace(task.Bin.WasteZone.Name)) locationParts.Add(task.Bin.WasteZone.Name);
+                            if (task.Bin.WasteZone.Property != null && !string.IsNullOrWhiteSpace(task.Bin.WasteZone.Property.Name))
+                                locationParts.Add(task.Bin.WasteZone.Property.Name);
+                        }
+                    }
+                    var locationStr = locationParts.Count > 0 ? string.Join(", ", locationParts) : "Assigned Bin Location";
+                    var binTag = task.Bin != null && !string.IsNullOrWhiteSpace(task.Bin.BinTag) ? task.Bin.BinTag : $"BIN-{task.BinId}";
+                    var clientBaseUrl = _configuration["AppSettings:ClientBaseUrl"] ?? "http://localhost:4200";
+                    var tasksUrl = $"{clientBaseUrl.TrimEnd('/')}/manage-tasks";
+
+                    _ = _emailService.SendTaskAssignedNotificationAsync(
+                        newlyAssignedStaff.Email,
+                        newlyAssignedStaff.Name,
+                        task.Title,
+                        binTag,
+                        locationStr,
+                        task.Instructions,
+                        task.DueDate,
+                        tasksUrl
+                    );
+                }
+                catch
+                {
+                    // Non-blocking notification
+                }
+            }
 
             var updatedTask = await _context.CollectionTasks
                 .Include(t => t.Bin)

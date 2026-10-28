@@ -21,5 +21,11 @@ namespace SmartEcoWaste.Services.Interfaces
         Task<ServiceResponse<List<Role>>> GetAllRolesAsync();
         Task<ServiceResponse<GetUserDto>> GetUser(int callerUserId, bool isAdminOrSupervisor, int targetUserId);
         Task<ServiceResponse<string>> MakeStaffAsync(int adminUserId, int targetUserId);
+        Task<ServiceResponse<string>> VerifyEmailAsync(string email, string token);
+        Task<ServiceResponse<string>> ForgotPasswordAsync(string email);
+        Task<ServiceResponse<string>> ResetPasswordWithTokenAsync(ResetPasswordWithTokenDto dto);
+        Task<ServiceResponse<List<PendingUserDto>>> GetPendingUsersAsync(int adminUserId);
+        Task<ServiceResponse<string>> ApproveUserAsync(int adminUserId, int targetUserId);
+        Task<ServiceResponse<string>> RejectUserAsync(int adminUserId, int targetUserId);
     }
 }

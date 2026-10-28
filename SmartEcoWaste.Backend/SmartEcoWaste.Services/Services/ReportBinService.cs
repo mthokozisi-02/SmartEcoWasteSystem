@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using SmartEcoWaste.Data.Dtos;
 using SmartEcoWaste.Data.Entities;
 using SmartEcoWaste.Data.Enums;
@@ -13,10 +14,16 @@ using System.Threading.Tasks;
 
 namespace SmartEcoWaste.Services.Services
 {
-    public class ReportBinService(IMapper mapper, SmartEcoWasteDbContext smartEcoWasteDbContext) : IReportBin
+    public class ReportBinService(
+        IMapper mapper,
+        SmartEcoWasteDbContext smartEcoWasteDbContext,
+        IEmailService emailService,
+        IConfiguration configuration) : IReportBin
     {
         private readonly IMapper _mapper = mapper;
         private readonly SmartEcoWasteDbContext _smartEcoWasteDbContext = smartEcoWasteDbContext;
+        private readonly IEmailService _emailService = emailService;
+        private readonly IConfiguration _configuration = configuration;
 
         public async Task<string> DeleteReport(int id)
         {
@@ -121,6 +128,12 @@ namespace SmartEcoWaste.Services.Services
                 return ServiceResponse<string>.Fail("Selected user is not assigned the Staff role.");
             }
 
+            // Security Hardening: Target staff member must belong to the report's authorized tenant
+            if (staffUser.TenantId != report.TenantId)
+            {
+                return ServiceResponse<string>.Fail("Target staff member does not belong to the report's organization.");
+            }
+
             report.AssignedTo = staffUser.Id;
             report.Status = Data.Enums.ReportStatus.Assigned;
             report.UpdatedAt = DateTime.UtcNow;
@@ -140,6 +153,50 @@ namespace SmartEcoWaste.Services.Services
             _smartEcoWasteDbContext.CollectionTasks.Add(collectionTask);
 
             await _smartEcoWasteDbContext.SaveChangesAsync();
+
+            // Notify assigned staff member via email
+            if (!string.IsNullOrWhiteSpace(staffUser.Email))
+            {
+                try
+                {
+                    var bin = report.Bin ?? await _smartEcoWasteDbContext.Bins
+                        .IgnoreQueryFilters()
+                        .Include(b => b.WasteZone)
+                        .ThenInclude(w => w!.Property)
+                        .FirstOrDefaultAsync(b => b.Id == report.BinId);
+
+                    var locationParts = new List<string>();
+                    if (bin != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(bin.Area)) locationParts.Add(bin.Area);
+                        if (bin.WasteZone != null)
+                        {
+                            if (!string.IsNullOrWhiteSpace(bin.WasteZone.Name)) locationParts.Add(bin.WasteZone.Name);
+                            if (bin.WasteZone.Property != null && !string.IsNullOrWhiteSpace(bin.WasteZone.Property.Name))
+                                locationParts.Add(bin.WasteZone.Property.Name);
+                        }
+                    }
+                    var locationStr = locationParts.Count > 0 ? string.Join(", ", locationParts) : "Reported Bin Location";
+                    var binTag = bin != null && !string.IsNullOrWhiteSpace(bin.BinTag) ? bin.BinTag : $"BIN-{report.BinId}";
+                    var clientBaseUrl = _configuration["AppSettings:ClientBaseUrl"] ?? "http://localhost:4200";
+                    var tasksUrl = $"{clientBaseUrl.TrimEnd('/')}/manage-tasks";
+
+                    _ = _emailService.SendTaskAssignedNotificationAsync(
+                        staffUser.Email,
+                        staffUser.Name,
+                        collectionTask.Title,
+                        binTag,
+                        locationStr,
+                        collectionTask.Instructions,
+                        collectionTask.DueDate,
+                        tasksUrl
+                    );
+                }
+                catch
+                {
+                    // Non-blocking notification
+                }
+            }
 
             return ServiceResponse<string>.Success(
                 "Report assigned successfully",
@@ -183,16 +240,19 @@ namespace SmartEcoWaste.Services.Services
                     return ServiceResponse<string>.Fail("Collector/verifier does not belong to the report's organization.");
                 }
 
+                // Validate that the bin belongs to the report's authorized tenant
+                var bin = await _smartEcoWasteDbContext.Bins.FirstOrDefaultAsync(b => b.Id == report.BinId && b.TenantId == report.TenantId && !b.IsDeleted);
+                if (bin == null)
+                {
+                    return ServiceResponse<string>.Fail("Associated bin does not exist or does not belong to your organization.");
+                }
+
                 report.Status = Data.Enums.ReportStatus.Resolved;
                 report.VerifiedAt = DateTime.UtcNow;
                 report.UpdatedAt = DateTime.UtcNow;
                 report.VerifiedBy = collectorUserId;
 
-                var bin = await _smartEcoWasteDbContext.Bins.FindAsync(report.BinId);
-                if (bin != null)
-                {
-                    bin.Status = Data.Enums.Status.Emptied;
-                }
+                bin.Status = Data.Enums.Status.Emptied;
 
                 // Synchronize open collection tasks for this bin
                 var pendingTasks = await _smartEcoWasteDbContext.CollectionTasks
@@ -206,26 +266,23 @@ namespace SmartEcoWaste.Services.Services
                 }
 
                 // Award points only after validating ownership and tenant relationship
-                // Enforce idempotency: points can only be awarded once per verified report
-                var targetUserId = report.UserId ?? (verify.UserId > 0 ? verify.UserId : (int?)null);
-                if (targetUserId.HasValue && targetUserId.Value > 0 && !report.PointsAwarded)
+                // Security Hardening: Never trust client-supplied verify.UserId. Use strictly verified report.UserId.
+                // Recipient and report must belong to the same tenant.
+                if (report.UserId.HasValue && report.UserId.Value > 0 && !report.PointsAwarded)
                 {
                     var reportingUser = await _smartEcoWasteDbContext.Users
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(u => u.Id == targetUserId.Value && !u.IsDeleted);
+                        .FirstOrDefaultAsync(u => u.Id == report.UserId.Value && !u.IsDeleted);
 
-                    if (reportingUser != null)
+                    if (reportingUser != null && reportingUser.TenantId == report.TenantId)
                     {
-                        var userTenantId = reportingUser.TenantId > 0 ? reportingUser.TenantId : report.TenantId;
                         var userPoints = await _smartEcoWasteDbContext.UsersPoints
-                            .IgnoreQueryFilters()
-                            .FirstOrDefaultAsync(up => up.UserId == reportingUser.Id && up.TenantId == userTenantId);
+                            .FirstOrDefaultAsync(up => up.UserId == reportingUser.Id && up.TenantId == report.TenantId);
 
                         if (userPoints is null)
                         {
                             userPoints = new UserPoints
                             {
-                                TenantId = userTenantId,
+                                TenantId = report.TenantId,
                                 UserId = reportingUser.Id,
                                 Points = 100
                             };
@@ -238,7 +295,6 @@ namespace SmartEcoWaste.Services.Services
                         }
 
                         report.PointsAwarded = true;
-                        report.UserId = reportingUser.Id;
                     }
                 }
 

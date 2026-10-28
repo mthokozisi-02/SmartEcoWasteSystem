@@ -102,7 +102,7 @@ namespace SmartEcoWaste.Api.Controllers
         /// Rate limited to mitigate spam.
         /// </summary>
         [AllowAnonymous]
-        [EnableRateLimiting("PublicReportRateLimit")]
+        [EnableRateLimiting("PhotoUploadRateLimit")]
         [HttpPost("upload-photo")]
         public async Task<IActionResult> UploadPhoto(IFormFile file)
         {
@@ -121,6 +121,15 @@ namespace SmartEcoWaste.Api.Controllers
             if (!allowedExtensions.Contains(extension))
             {
                 return BadRequest(new { isSuccess = false, message = "Only JPG, PNG, and WebP image formats are supported." });
+            }
+
+            // Enforce magic bytes verification: reject arbitrary files masked with an image extension
+            using (var checkStream = file.OpenReadStream())
+            {
+                if (!IsValidImageMagicBytes(checkStream, extension))
+                {
+                    return BadRequest(new { isSuccess = false, message = "Uploaded file content does not match a valid image format." });
+                }
             }
 
             var rootPath = _environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
@@ -142,6 +151,41 @@ namespace SmartEcoWaste.Api.Controllers
             return Ok(new { isSuccess = true, data = relativeUrl, message = "Photo uploaded successfully." });
         }
 
+        private static bool IsValidImageMagicBytes(Stream stream, string extension)
+        {
+            var header = new byte[12];
+            var bytesRead = stream.Read(header, 0, header.Length);
+            if (stream.CanSeek)
+            {
+                stream.Position = 0;
+            }
+
+            if (bytesRead < 4) return false;
+
+            switch (extension)
+            {
+                case ".jpg":
+                case ".jpeg":
+                    // JPEG starts with FF D8 FF
+                    return header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF;
+
+                case ".png":
+                    // PNG starts with 89 50 4E 47 0D 0A 1A 0A
+                    return bytesRead >= 8 &&
+                           header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47 &&
+                           header[4] == 0x0D && header[5] == 0x0A && header[6] == 0x1A && header[7] == 0x0A;
+
+                case ".webp":
+                    // WEBP starts with "RIFF" (52 49 46 46) and bytes 8-11 are "WEBP" (57 45 42 50)
+                    return bytesRead >= 12 &&
+                           header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46 &&
+                           header[8] == 0x57 && header[9] == 0x45 && header[10] == 0x42 && header[11] == 0x50;
+
+                default:
+                    return false;
+            }
+        }
+
         /// <summary>
         /// Public reporting: Accepts report from citizen or authenticated user.
         /// Rate limited to mitigate spam and DOS on public bins.
@@ -151,11 +195,9 @@ namespace SmartEcoWaste.Api.Controllers
         [HttpPost("report-bin")]
         public async Task<IActionResult> ReportBin([FromBody] ReportBinDto report)
         {
+            // Security Hardening: Derive reporter identity strictly from validated JWT claims.
+            // Client-supplied report.UserId is explicitly ignored to prevent identity spoofing.
             var authenticatedUserId = GetAuthenticatedUserId();
-            if (!authenticatedUserId.HasValue && report.UserId > 0)
-            {
-                authenticatedUserId = report.UserId;
-            }
             var res = await _binService.ReportBinAsync(authenticatedUserId, report);
             return res.IsSuccess ? Ok(res) : BadRequest(res);
         }

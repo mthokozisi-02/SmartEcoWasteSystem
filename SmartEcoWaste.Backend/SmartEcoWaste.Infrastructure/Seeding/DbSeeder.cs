@@ -13,27 +13,40 @@ namespace SmartEcoWaste.Infrastructure.Seeding
 {
     public static class DbSeeder
     {
-        public static async Task SeedAsync(SmartEcoWasteDbContext context, ITenantContextAccessor? tenantAccessor = null)
+        public static async Task SeedAsync(SmartEcoWasteDbContext context, ITenantContextAccessor? tenantAccessor = null, bool seedDemoData = false)
         {
             // Explicitly establish system administrator context for database seeding workflow
             tenantAccessor?.SetTenant(0, isSuperAdmin: true);
 
             await context.Database.MigrateAsync();
 
-            // 1. Roles
-            if (!await context.Roles.AnyAsync())
+            // 1. Core System Roles (Required for platform operations)
+            if (!await context.Roles.AnyAsync(r => r.Name == "Admin"))
             {
-                context.Roles.AddRange(
-                    new Role { Name = "Admin" },
-                    new Role { Name = "User" },
-                    new Role { Name = "Staff" }
-                );
-                await context.SaveChangesAsync();
+                context.Roles.Add(new Role { Name = "Admin", CreatedAt = DateTime.UtcNow });
             }
-            else if (!await context.Roles.AnyAsync(r => r.Name == "Staff"))
+            if (!await context.Roles.AnyAsync(r => r.Name == "User"))
             {
-                context.Roles.Add(new Role { Name = "Staff" });
-                await context.SaveChangesAsync();
+                context.Roles.Add(new Role { Name = "User", CreatedAt = DateTime.UtcNow });
+            }
+            if (!await context.Roles.AnyAsync(r => r.Name == "Staff"))
+            {
+                context.Roles.Add(new Role { Name = "Staff", CreatedAt = DateTime.UtcNow });
+            }
+            if (!await context.Roles.AnyAsync(r => r.Name == "Supervisor"))
+            {
+                context.Roles.Add(new Role { Name = "Supervisor", CreatedAt = DateTime.UtcNow });
+            }
+            if (!await context.Roles.AnyAsync(r => r.Name == "SuperAdmin"))
+            {
+                context.Roles.Add(new Role { Name = "SuperAdmin", CreatedAt = DateTime.UtcNow });
+            }
+            await context.SaveChangesAsync();
+
+            // Only seed sample demonstration data if explicitly enabled (Development / Staging sandbox)
+            if (!seedDemoData)
+            {
+                return;
             }
 
             var adminRole = await context.Roles.FirstAsync(r => r.Name == "Admin");
@@ -119,6 +132,8 @@ namespace SmartEcoWaste.Infrastructure.Seeding
 
             foreach (var u in demoUsers)
             {
+                u.IsEmailConfirmed = true;
+                u.IsApproved = true;
                 var existing = await context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Email == u.Email);
                 if (existing == null)
                 {
@@ -128,6 +143,8 @@ namespace SmartEcoWaste.Infrastructure.Seeding
                 {
                     existing.TenantId = u.TenantId;
                     existing.RoleId = u.RoleId;
+                    existing.IsEmailConfirmed = true;
+                    existing.IsApproved = true;
                 }
             }
             await context.SaveChangesAsync();

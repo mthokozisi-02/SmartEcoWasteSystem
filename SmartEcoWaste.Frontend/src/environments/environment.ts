@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiUrl: 'http://localhost:5300/api'
+    apiUrl: 'https://api.smartecowaste.com/api'
 };

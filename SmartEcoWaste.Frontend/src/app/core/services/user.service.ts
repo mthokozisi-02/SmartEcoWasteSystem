@@ -46,4 +46,28 @@ export class UserService {
     getAllRoles(): Observable<any> {
         return this.http.get<any>(`${apiUrl}/get-roles`);
     }
+
+    verifyEmail(email: string, token: string): Observable<any> {
+        return this.http.get<any>(`${apiUrl}/verify-email?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`);
+    }
+
+    getPendingApprovals(): Observable<any> {
+        return this.http.get<any>(`${apiUrl}/pending-approvals`);
+    }
+
+    approveUser(userId: number): Observable<any> {
+        return this.http.post<any>(`${apiUrl}/users/${userId}/approve`, {});
+    }
+
+    rejectUser(userId: number): Observable<any> {
+        return this.http.post<any>(`${apiUrl}/users/${userId}/reject`, {});
+    }
+
+    forgotPassword(email: string): Observable<any> {
+        return this.http.post<any>(`${apiUrl}/forgot-password`, { email });
+    }
+
+    resetPassword(dto: { email: string; token: string; newPassword: string }): Observable<any> {
+        return this.http.post<any>(`${apiUrl}/reset-password`, dto);
+    }
 }

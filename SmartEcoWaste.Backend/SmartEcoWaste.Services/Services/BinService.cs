@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using QRCoder;
 using SmartEcoWaste.Data.Dtos;
 using SmartEcoWaste.Data.Entities;
@@ -16,11 +17,18 @@ using System.Threading.Tasks;
 
 namespace SmartEcoWaste.Services.Services
 {
-    public class BinService(IMapper mapper, SmartEcoWasteDbContext smartEcoWasteDbContext, ITenantContextAccessor tenantAccessor) : IBinService
+    public class BinService(
+        IMapper mapper,
+        SmartEcoWasteDbContext smartEcoWasteDbContext,
+        ITenantContextAccessor tenantAccessor,
+        IEmailService emailService,
+        IConfiguration configuration) : IBinService
     {
         private readonly IMapper _mapper = mapper;
         private readonly SmartEcoWasteDbContext _smartEcoWasteDbContext = smartEcoWasteDbContext;
         private readonly ITenantContextAccessor _tenantAccessor = tenantAccessor;
+        private readonly IEmailService _emailService = emailService;
+        private readonly IConfiguration _configuration = configuration;
 
         public async Task<ServiceResponse<string>> CreateBinAsync(CreateBinDto binDto)
         {
@@ -187,6 +195,8 @@ namespace SmartEcoWaste.Services.Services
                 // Public QR reporting: lookup the bin across tenants using IgnoreQueryFilters
                 var bin = await _smartEcoWasteDbContext.Bins
                     .IgnoreQueryFilters()
+                    .Include(b => b.WasteZone)
+                    .ThenInclude(w => w!.Property)
                     .FirstOrDefaultAsync(b => b.Id == report.BinId && !b.IsDeleted);
 
                 if (bin is null)
@@ -219,7 +229,14 @@ namespace SmartEcoWaste.Services.Services
 
                     if (reportingUser != null)
                     {
-                        actualUserId = reportingUser.Id;
+                        if (reportingUser.TenantId == bin.TenantId)
+                        {
+                            actualUserId = reportingUser.Id;
+                        }
+                        else
+                        {
+                            isCrossTenantUser = true;
+                        }
                     }
                 }
 
@@ -246,6 +263,64 @@ namespace SmartEcoWaste.Services.Services
                 await _smartEcoWasteDbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+                // Notify organization administrators about the newly reported bin
+                try
+                {
+                    var locationParts = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(bin.Area)) locationParts.Add(bin.Area);
+                    if (bin.WasteZone != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(bin.WasteZone.Name)) locationParts.Add(bin.WasteZone.Name);
+                        if (bin.WasteZone.Property != null && !string.IsNullOrWhiteSpace(bin.WasteZone.Property.Name))
+                            locationParts.Add(bin.WasteZone.Property.Name);
+                    }
+                    var locationStr = locationParts.Count > 0 ? string.Join(", ", locationParts) : "Designated Bin Location";
+                    var binTag = !string.IsNullOrWhiteSpace(bin.BinTag) ? bin.BinTag : $"BIN-{bin.Id}";
+
+                    string reporterDisplayName = "Anonymous Citizen";
+                    if (actualUserId.HasValue)
+                    {
+                        var reportingUser = await _smartEcoWasteDbContext.Users
+                            .IgnoreQueryFilters()
+                            .FirstOrDefaultAsync(u => u.Id == actualUserId.Value);
+                        if (reportingUser != null && !string.IsNullOrWhiteSpace(reportingUser.Name))
+                        {
+                            reporterDisplayName = reportingUser.Name;
+                        }
+                    }
+
+                    var adminsToNotify = await _smartEcoWasteDbContext.Users
+                        .IgnoreQueryFilters()
+                        .Include(u => u.Role)
+                        .Where(u => u.TenantId == bin.TenantId && !u.IsDeleted && u.IsApproved &&
+                                    u.Role != null && (u.Role.Name == "Admin" || u.Role.Name == "Supervisor"))
+                        .ToListAsync();
+
+                    var clientBaseUrl = _configuration["AppSettings:ClientBaseUrl"] ?? "http://localhost:4200";
+                    var reportsUrl = $"{clientBaseUrl.TrimEnd('/')}/manage-reports";
+
+                    foreach (var admin in adminsToNotify)
+                    {
+                        if (!string.IsNullOrWhiteSpace(admin.Email))
+                        {
+                            _ = _emailService.SendBinReportedNotificationAsync(
+                                admin.Email,
+                                admin.Name,
+                                binTag,
+                                report.Status.ToString(),
+                                locationStr,
+                                reporterDisplayName,
+                                report.PhotoUrl,
+                                reportsUrl
+                            );
+                        }
+                    }
+                }
+                catch
+                {
+                    // Email notification failure should not prevent successful report creation
+                }
+
                 string message;
                 if (actualUserId.HasValue)
                 {
@@ -271,10 +346,10 @@ namespace SmartEcoWaste.Services.Services
 
         public async Task<byte[]> UpdateAsync(CreateBinDto updatedBin)
         {
-            var bin = await _smartEcoWasteDbContext.Bins.FindAsync(updatedBin.Id);
+            var bin = await _smartEcoWasteDbContext.Bins.FirstOrDefaultAsync(b => b.Id == updatedBin.Id && !b.IsDeleted);
             if (bin == null)
             {
-                throw new Exception("Bin not found.");
+                throw new Exception("Bin not found in your organization.");
             }
 
             if (!string.IsNullOrWhiteSpace(updatedBin.BinTag))
@@ -294,7 +369,7 @@ namespace SmartEcoWaste.Services.Services
                 if (updatedBin.WasteZoneId.Value > 0)
                 {
                     var zone = await _smartEcoWasteDbContext.WasteZones
-                        .FirstOrDefaultAsync(w => w.Id == updatedBin.WasteZoneId.Value && !w.IsDeleted);
+                        .FirstOrDefaultAsync(w => w.Id == updatedBin.WasteZoneId.Value && w.TenantId == bin.TenantId && !w.IsDeleted);
                     if (zone == null)
                     {
                         throw new Exception("Specified waste zone not found in your organization.");

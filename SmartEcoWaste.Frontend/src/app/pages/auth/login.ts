@@ -113,7 +113,7 @@ export class Login implements OnInit {
             severity: 'error',
             summary: 'Sign In Failed',
             detail: message,
-            life: 4000
+            life: 6000
         });
     }
 

@@ -108,7 +108,7 @@ namespace SmartEcoWaste.Api.Controllers
             return Ok(new { isSuccess = true, message = $"Tenant status updated to {(isActive ? "Active" : "Deactivated")}." });
         }
 
-        [Authorize(Roles = "Admin,Supervisor")]
+        [Authorize(Roles = "Admin,Supervisor,SuperAdmin")]
         [HttpGet("audit-logs")]
         public async Task<IActionResult> GetAuditLogs([FromQuery] PaginationFilterDto filter)
         {

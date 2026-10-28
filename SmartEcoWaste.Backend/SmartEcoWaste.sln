@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartEcoWaste.Services", "S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartEcoWaste.Infrastructure", "SmartEcoWaste.Infrastructure\SmartEcoWaste.Infrastructure.csproj", "{E50025A9-0A45-4E16-8CDB-7FAD7BDCA5E1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartEcoWaste.Tests", "SmartEcoWaste.Tests\SmartEcoWaste.Tests.csproj", "{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,18 @@ Global
 		{E50025A9-0A45-4E16-8CDB-7FAD7BDCA5E1}.Release|x64.Build.0 = Release|Any CPU
 		{E50025A9-0A45-4E16-8CDB-7FAD7BDCA5E1}.Release|x86.ActiveCfg = Release|Any CPU
 		{E50025A9-0A45-4E16-8CDB-7FAD7BDCA5E1}.Release|x86.Build.0 = Release|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Debug|x64.Build.0 = Debug|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Debug|x86.Build.0 = Debug|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Release|x64.ActiveCfg = Release|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Release|x64.Build.0 = Release|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Release|x86.ActiveCfg = Release|Any CPU
+		{09BEAF1E-0F3D-405A-B621-DDBC1E098A57}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

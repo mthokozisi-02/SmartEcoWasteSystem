@@ -34,7 +34,32 @@ import { UserService } from '@/core/services/user.service';
             <div class="absolute pointer-events-none" style="bottom: 15%; left: 15%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(6,182,212,0.06) 0%, transparent 70%);"></div>
 
             <div class="relative z-10 w-full max-w-md">
-                <div class="p-8 md:p-10 rounded-3xl relative overflow-hidden bg-white" style="border: 1px solid #e2e8f0; box-shadow: 0 20px 45px -10px rgba(16, 185, 129, 0.12), 0 10px 25px -5px rgba(0, 0, 0, 0.04);">
+                <!-- Registration Pending State -->
+                <div *ngIf="isSubmitted" class="p-8 md:p-10 rounded-3xl relative overflow-hidden bg-white text-center" style="border: 1px solid #e2e8f0; box-shadow: 0 20px 45px -10px rgba(245, 158, 11, 0.12), 0 10px 25px -5px rgba(0, 0, 0, 0.04);">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 10px 25px rgba(245,158,11,0.35);">
+                        <i class="fa-solid fa-hourglass-half text-white text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-extrabold mb-2 text-slate-900">Awaiting Approval</h2>
+                    <div class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4" style="background: #fef3c7; color: #b45309;">
+                        Registration Pending
+                    </div>
+                    <p class="text-sm font-medium text-slate-600 mb-4 leading-relaxed">
+                        Your account has been registered successfully and is currently waiting to be approved by your organization administrator.
+                    </p>
+                    <div class="p-4 rounded-xl text-xs text-left mb-6" style="background: #f8fafc; border: 1px solid #e2e8f0; color: #475569;">
+                        <div class="flex items-start gap-2.5">
+                            <i class="fa-solid fa-envelope text-amber-500 mt-0.5"></i>
+                            <div>
+                                <strong>Email Notification:</strong><br>
+                                You will receive an email as soon as an administrator approves your account, after which you will be able to log in immediately.
+                            </div>
+                        </div>
+                    </div>
+                    <button pButton pRipple label="Back to Sign In" icon="fa-solid fa-arrow-left" routerLink="/auth/login" class="w-full p-3 text-sm font-bold rounded-xl border-none" style="background: #0f172a; color: white;"></button>
+                </div>
+
+                <!-- Registration Form -->
+                <div *ngIf="!isSubmitted" class="p-8 md:p-10 rounded-3xl relative overflow-hidden bg-white" style="border: 1px solid #e2e8f0; box-shadow: 0 20px 45px -10px rgba(16, 185, 129, 0.12), 0 10px 25px -5px rgba(0, 0, 0, 0.04);">
                     <div class="text-center mb-6">
                         <a routerLink="/" class="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 10px 25px rgba(16,185,129,0.35);">
                             <i class="fa-solid fa-user-plus text-white text-2xl"></i>
@@ -75,6 +100,7 @@ import { UserService } from '@/core/services/user.service';
                         <div>
                             <label for="password1" class="block text-xs font-bold uppercase tracking-wider mb-1.5 text-slate-700">Password</label>
                             <p-password id="password1" [(ngModel)]="newUser.passwordHash" placeholder="••••••••" [toggleMask]="true" styleClass="w-full" [fluid]="true" [feedback]="false"></p-password>
+                            <p class="text-[11px] text-slate-500 mt-1">Minimum 12 characters (uppercase, lowercase, number & symbol)</p>
                         </div>
 
                         <div class="flex items-center justify-between mt-1 mb-2">
@@ -102,6 +128,7 @@ export class Signup implements OnInit {
 
     checked: boolean = false;
     isLoading = false;
+    isSubmitted = false;
     errorMessage = '';
 
     private destroyRef = inject(DestroyRef);
@@ -175,8 +202,8 @@ export class Signup implements OnInit {
             .createUser(this.newUser)
             .pipe(
                 tap((res) => {
-                    this.showSuccess('Sign up successful! Please sign in with your credentials.');
-                    this.router.navigate(['/auth/login'], {});
+                    this.isSubmitted = true;
+                    this.showSuccess('Registration submitted! Your account is awaiting administrator approval.');
                 }),
                 catchError((err) => {
                     this.showError(err);

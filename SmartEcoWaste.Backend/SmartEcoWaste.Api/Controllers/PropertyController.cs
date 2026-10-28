@@ -18,6 +18,7 @@ namespace SmartEcoWaste.Api.Controllers
             _propertyService = propertyService;
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("create-property")]
         public async Task<IActionResult> CreateProperty([FromBody] CreatePropertyDto dto)
         {
@@ -25,6 +26,7 @@ namespace SmartEcoWaste.Api.Controllers
             return res.IsSuccess ? Ok(res) : BadRequest(res);
         }
 
+        [Authorize(Roles = "Admin,Supervisor,Staff")]
         [HttpGet("get-all-properties")]
         public async Task<IActionResult> GetAllProperties()
         {
@@ -32,6 +34,7 @@ namespace SmartEcoWaste.Api.Controllers
             return res.IsSuccess ? Ok(res) : BadRequest(res);
         }
 
+        [Authorize(Roles = "Admin,Supervisor,Staff")]
         [HttpGet("get-property/{id}")]
         public async Task<IActionResult> GetProperty(int id)
         {
@@ -39,6 +42,7 @@ namespace SmartEcoWaste.Api.Controllers
             return res.IsSuccess ? Ok(res) : NotFound(res);
         }
 
+        [Authorize(Roles = "Admin,Supervisor")]
         [HttpPost("create-building")]
         public async Task<IActionResult> CreateBuilding([FromBody] CreateBuildingDto dto)
         {
@@ -46,6 +50,7 @@ namespace SmartEcoWaste.Api.Controllers
             return res.IsSuccess ? Ok(res) : BadRequest(res);
         }
 
+        [Authorize(Roles = "Admin,Supervisor,Staff")]
         [HttpGet("get-buildings/{propertyId}")]
         public async Task<IActionResult> GetBuildings(int propertyId)
         {
@@ -53,6 +58,7 @@ namespace SmartEcoWaste.Api.Controllers
             return res.IsSuccess ? Ok(res) : BadRequest(res);
         }
 
+        [Authorize(Roles = "Admin,Supervisor")]
         [HttpPost("create-waste-zone")]
         public async Task<IActionResult> CreateWasteZone([FromBody] CreateWasteZoneDto dto)
         {
@@ -60,6 +66,7 @@ namespace SmartEcoWaste.Api.Controllers
             return res.IsSuccess ? Ok(res) : BadRequest(res);
         }
 
+        [Authorize(Roles = "Admin,Supervisor,Staff")]
         [HttpGet("get-waste-zones/{propertyId}")]
         public async Task<IActionResult> GetWasteZones(int propertyId)
         {
